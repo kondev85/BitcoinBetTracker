@@ -1,0 +1,23 @@
+Hey Replit Agent ,
+ Build a Bitcoin block betting platform MVP with multiple pages—React + TypeScript (frontend), Express.js + TypeScript (backend), PostgreSQL (database). Match my stack (wouter for routing, Tailwind CSS, Shadcn/UI, Recharts. Here’s the spec:
+Navigation & Layout
+●	Nav Bar: Top—links: Home , Place Bets, , Stats,  Bitcoin Mining, 
+●	Footer: Bottom—all pages, placeholder text—“Contact Us
+Home Page (/)
+The home page is the most important. It should be a player journey where A  it is explained in short how bitcoin mining work , mining pools, how the more percentage you have the bigger chance you hit a block. (We have a link as well to bitcoin mining page where we provide more information)  We show pie chart similar to https://mempool.space/graphs/mining/pools with options for 24h,3D,1W
+B/Then we show blocks table with the most recent blocks similar to https://mempool.space/blocks/1  showing that in reality situation is different as every guessing game it is poor of luck however 
+C/ then we  to show in the long run that actually pools take what they deserve . Thus we show 4 cards  with top 3 pools and the 4th one combine others where we show statistics: percentage of total hashrate; expected blocks ; actual blocks; Luck in percentage as 100% if you hit exactly what you deserve and we show that for the last 10,50,250,1000 blocks+ llink to the page Stats
+D/ Now player start understand the logic so we provide them with betting option . We provide couple of betting options for block 900,000 who will hit it   Foundry, Antpool etc or who will not  hit or if it will be hit for over or under 10 minutes with respective odds as a buttons similar to sportsbook page . If player hit the button it leads him Place bet page where we show him to which blockchain address he needs to send the funds ( { btc: "bc1qantpool123..."   lltc: "ltc1qantpool456...", usdc: "0xantpool789…)  example and more instructions in regards how the fund needs to be send  . 
+E/ Section about us that we should not trust us but to verify our capital allocation for payment where we show balance of  our BTC; Litecoin : allocations
+           As Database we should have couple: 
+1.	Blocks as column and prefil take from csv file attached and afterwards from https://mempool.space/docs/api/rest#get-block
+2.	Miners - we record miners average  hasharate for 24h,3D,1W GET /api/v1/mining/pools[/:timePeriod]  https://mempool.space/docs/api/rest#get-mining-pools 
+3.	Total network hashrate 
+4.	Published blocks: future blocks on which bettors can bet if it is published , it shown to bettors 
+5.	Odds for the different miners if they will or not hit + payment addresses 
+6.	Odds for the time based bets
+   In the admin section we should have 
+-	Section to publish particular block/page for specific block
+-	Section to manually change the odds for the events and the payment address
+-	Section to show mining statistics for all miners
+Design should be modern more or less like sportsbook page however enhance with more text as we need to explain the idea

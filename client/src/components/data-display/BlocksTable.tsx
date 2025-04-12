@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchBlocks } from "@/lib/api";
 import { Link } from "wouter";
-import { formatDistanceToNow } from "date-fns";
 import { 
   Table,
   TableBody,
@@ -27,16 +26,17 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
 
   // Map pool slugs to proper names
   const poolSlugsToNames: Record<string, string> = {
-    'foundry': 'Foundry USA',
+    'foundryusa': 'Foundry USA',
     'antpool': 'Antpool',
     'f2pool': 'F2Pool',
-    'binance': 'Binance Pool',
+    'binancepool': 'Binance Pool',
     'viabtc': 'ViaBTC',
     'btccom': 'BTC.com',
     'poolin': 'Poolin',
     'luxor': 'Luxor',
     'slushpool': 'Braiins Pool',
-    'mara': 'MARA Pool'
+    'marapool': 'MARA Pool',
+    'secpool': 'SEC Pool'
   };
 
   return (
@@ -125,9 +125,14 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
 // Helper function to format timestamp
 function formatBlockTimestamp(timestamp: string | Date) {
   const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
-  const distance = formatDistanceToNow(date, { addSuffix: true });
-  
-  // Convert "about 1 hour ago" to "about 1 hour ago"
-  // And "21 minutes ago" stays the same
-  return distance;
+  // Format as MM/DD/YYYY, hh:mm:ss AM/PM
+  return date.toLocaleString('en-US', {
+    month: 'numeric',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hour12: true
+  });
 }

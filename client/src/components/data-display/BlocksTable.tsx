@@ -36,7 +36,20 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
     'luxor': 'Luxor',
     'slushpool': 'Braiins Pool',
     'marapool': 'MARA Pool',
-    'secpool': 'SEC Pool'
+    'secpool': 'SEC Pool',
+    'sbicrypto': 'SBI Crypto',
+    'miningsquared': 'Mining Squared',
+    'innopolistech': 'Innopolis Tech',
+    'rigpool': 'RigPool',
+    'satoshifloor': 'Satoshi Floor',
+    'ultimatepool': 'Ultimate Pool',
+    'digitalfarm': 'Digital Farm',
+    'ckpool': 'CKPool',
+    'kncminer': 'KnCMiner',
+    'blocksmith': 'Blocksmith',
+    'cryptoforge': 'Crypto Forge',
+    'hashpool': 'HashPool',
+    'bitdeer': 'BitDeer'
   };
   
   // Map pool slugs to colors
@@ -51,7 +64,20 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
     'luxor': '#6366F1',      // Indigo
     'slushpool': '#4ADE80',  // Green
     'marapool': '#EF4444',   // Red
-    'secpool': '#A3E635'     // Lime
+    'secpool': '#A3E635',    // Lime
+    'sbicrypto': '#D946EF',  // Fuchsia
+    'miningsquared': '#0EA5E9', // Sky blue
+    'innopolistech': '#84CC16', // Lime green
+    'rigpool': '#9333EA',    // Purple
+    'satoshifloor': '#F97316', // Orange
+    'ultimatepool': '#DC2626', // Red
+    'digitalfarm': '#2563EB', // Blue
+    'ckpool': '#CA8A04',     // Yellow
+    'kncminer': '#C026D3',   // Fuchsia
+    'blocksmith': '#14B8A6',  // Teal
+    'cryptoforge': '#7C3AED', // Violet
+    'hashpool': '#EA580C',   // Orange
+    'bitdeer': '#0369A1'     // Blue
   };
 
   return (

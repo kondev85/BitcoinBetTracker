@@ -38,6 +38,21 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
     'marapool': 'MARA Pool',
     'secpool': 'SEC Pool'
   };
+  
+  // Map pool slugs to colors
+  const poolSlugsToColors: Record<string, string> = {
+    'foundryusa': '#F7931A', // Bitcoin orange
+    'antpool': '#3B82F6',    // Blue
+    'f2pool': '#10B981',     // Green
+    'binancepool': '#8B5CF6', // Purple
+    'viabtc': '#F59E0B',     // Amber
+    'btccom': '#EC4899',     // Pink
+    'poolin': '#06B6D4',     // Cyan
+    'luxor': '#6366F1',      // Indigo
+    'slushpool': '#4ADE80',  // Green
+    'marapool': '#EF4444',   // Red
+    'secpool': '#A3E635'     // Lime
+  };
 
   return (
     <Card className="w-full bg-black text-white">
@@ -52,12 +67,48 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
           <Table>
             <TableHeader>
               <TableRow className="border-b border-gray-800">
-                <TableHead className="text-gray-300">Block Height</TableHead>
-                <TableHead className="text-gray-300">Mining Pool</TableHead>
-                <TableHead className="text-gray-300">Timestamp</TableHead>
-                <TableHead className="text-gray-300">Found In (min)</TableHead>
-                <TableHead className="text-gray-300">Block Reward</TableHead>
-                <TableHead className="text-gray-300">Transactions</TableHead>
+                <TableHead className="text-gray-300 group relative cursor-help">
+                  Block Height
+                  <span className="absolute hidden group-hover:block bg-gray-900 text-xs p-2 rounded shadow-lg z-10 w-48 -left-4 top-full mt-1">
+                    The sequential number of the block in the blockchain
+                  </span>
+                </TableHead>
+                <TableHead className="text-gray-300 group relative cursor-help">
+                  Mining Pool
+                  <span className="absolute hidden group-hover:block bg-gray-900 text-xs p-2 rounded shadow-lg z-10 w-48 -left-4 top-full mt-1">
+                    The mining pool that found/mined this block
+                  </span>
+                </TableHead>
+                <TableHead className="text-gray-300 group relative cursor-help">
+                  Timestamp
+                  <span className="absolute hidden group-hover:block bg-gray-900 text-xs p-2 rounded shadow-lg z-10 w-48 -left-4 top-full mt-1">
+                    The date and time when the block was mined
+                  </span>
+                </TableHead>
+                <TableHead className="text-gray-300 group relative cursor-help">
+                  Found In (min)
+                  <span className="absolute hidden group-hover:block bg-gray-900 text-xs p-2 rounded shadow-lg z-10 w-60 -left-4 top-full mt-1">
+                    Time in minutes it took to find this block since the previous one
+                  </span>
+                </TableHead>
+                <TableHead className="text-gray-300 group relative cursor-help">
+                  Size (MB)
+                  <span className="absolute hidden group-hover:block bg-gray-900 text-xs p-2 rounded shadow-lg z-10 w-48 -left-4 top-full mt-1">
+                    The size of the block in megabytes
+                  </span>
+                </TableHead>
+                <TableHead className="text-gray-300 group relative cursor-help">
+                  Block Reward
+                  <span className="absolute hidden group-hover:block bg-gray-900 text-xs p-2 rounded shadow-lg z-10 w-60 -left-4 top-full mt-1">
+                    The total reward in BTC given to the miner for finding this block
+                  </span>
+                </TableHead>
+                <TableHead className="text-gray-300 group relative cursor-help">
+                  Transactions
+                  <span className="absolute hidden group-hover:block bg-gray-900 text-xs p-2 rounded shadow-lg z-10 w-48 -left-4 top-full mt-1">
+                    Number of transactions included in this block
+                  </span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -68,6 +119,7 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
                     <TableCell><Skeleton className="h-4 w-24 bg-gray-700" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-32 bg-gray-700" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-8 bg-gray-700" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-12 bg-gray-700" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-16 bg-gray-700" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-12 bg-gray-700" /></TableCell>
                   </TableRow>
@@ -87,7 +139,12 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
                   <TableCell>
                     <div className="flex items-center">
                       <div 
-                        className="w-3 h-3 rounded-full mr-2 bg-gray-500"
+                        className="w-3 h-3 rounded-full mr-2"
+                        style={{ 
+                          backgroundColor: block.poolSlug && poolSlugsToColors[block.poolSlug] 
+                            ? poolSlugsToColors[block.poolSlug] 
+                            : '#6B7280' // default gray
+                        }}
                       ></div>
                       {block.poolSlug ? poolSlugsToNames[block.poolSlug] || 'Unknown Pool' : 'Unknown Pool'}
                     </div>
@@ -96,7 +153,10 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
                     {formatBlockTimestamp(block.timestamp)}
                   </TableCell>
                   <TableCell>
-                    {block.foundInMinutes ? `${Number(block.foundInMinutes).toFixed(1)}` : 'N/A'}
+                    {block.foundInMinutes ? `${Math.round(Number(block.foundInMinutes))}` : 'N/A'}
+                  </TableCell>
+                  <TableCell>
+                    {block.size ? `${(Number(block.size)).toFixed(2)}` : 'N/A'}
                   </TableCell>
                   <TableCell>
                     {block.totalOutputAmount ? `${(block.totalOutputAmount).toFixed(3)} BTC` : '0.000 BTC'}

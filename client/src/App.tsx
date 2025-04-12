@@ -9,6 +9,7 @@ import Stats from "@/pages/stats";
 import BitcoinMining from "@/pages/bitcoin-mining";
 import Admin from "@/pages/admin";
 import BlockDetails from "@/pages/block-details/[height]";
+import BlocksView from "./pages/blocks-view";
 
 function Router() {
   return (
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/bitcoin-mining" component={BitcoinMining} />
       <Route path="/admin" component={Admin} />
       <Route path="/block-details/:height" component={BlockDetails} />
+      <Route path="/blocks-view" component={BlocksView} />
       <Route component={NotFound} />
     </Switch>
   );

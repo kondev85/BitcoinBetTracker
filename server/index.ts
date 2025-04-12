@@ -1,11 +1,14 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
+import { apiRouter } from "./apis";
+import { checkDbConnection, resetConnectionPool } from "./db";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -36,35 +39,49 @@ app.use((req, res, next) => {
   next();
 });
 
+// Register API routes
+app.use('/api', apiRouter);
+
+// Global error handler
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  const status = err.status || err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
+
+  res.status(status).json({ message });
+  console.error(`Error handled: ${err.message}`);
+});
+
 (async () => {
-  const server = await registerRoutes(app);
+  // Create HTTP server
+  const server = createServer(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+  // Check database connection
+  const isDbConnected = await checkDbConnection();
+  if (!isDbConnected) {
+    console.error("Failed to connect to the database. Attempting to reset connection pool...");
+    const reset = await resetConnectionPool();
+    if (!reset) {
+      console.error("Failed to reset connection pool. Please check your DATABASE_URL.");
+    }
+  } else {
+    console.log("Successfully connected to the database.");
+  }
 
-    res.status(status).json({ message });
-    throw err;
-  });
-
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // Set up Vite or serve static files
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // Start the server
   const port = 5000;
   server.listen({
     port,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`Server running on port ${port}`);
+    log(`Using Neon database connection with the provided DATABASE_URL`);
   });
 })();

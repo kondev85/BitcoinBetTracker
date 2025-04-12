@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchBlocks } from "@/lib/api";
+import { fetchBlocks, fetchMiningPools } from "@/lib/api";
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { 
@@ -25,6 +25,28 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
     queryKey: ['/api/blocks', limit],
     queryFn: () => fetchBlocks(limit),
   });
+
+  // Fetch mining pools to get their names and colors
+  const { data: miningPools } = useQuery({
+    queryKey: ['/api/mining-pools'],
+    queryFn: fetchMiningPools
+  });
+
+  // Function to get pool name from the pool slug or ID
+  const getPoolName = (poolSlug: string | null, minerId: number): string => {
+    if (poolSlug && miningPools) {
+      const pool = miningPools.find(p => p.slug === poolSlug);
+      if (pool) return pool.name;
+    }
+    
+    // Fallback to miners by ID if no pool slug or not found
+    if (miningPools) {
+      const pool = miningPools.find(p => p.id === minerId);
+      if (pool) return pool.name;
+    }
+    
+    return 'Unknown Pool';
+  };
 
   return (
     <Card className="w-full">
@@ -59,44 +81,46 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
                     <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                   </TableRow>
                 ))
-              ) : blocks?.map(block => (
-                <TableRow 
-                  key={block.height} 
-                  className="hover:bg-primary/5 cursor-pointer transition-colors"
-                >
-                  <TableCell className="font-medium">
-                    <Link href={`/block-details/${block.height}`}>
-                      <a className="flex items-center">
-                        {block.height}
-                        <ExternalLink className="h-3 w-3 ml-1" />
-                      </a>
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center">
-                      <div 
-                        className="w-3 h-3 rounded-full mr-2"
-                        style={{ 
-                          backgroundColor: getPoolColor(block.miningPool)
-                        }}
-                      ></div>
-                      {block.miningPool}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {formatBlockTimestamp(block.timestamp)}
-                  </TableCell>
-                  <TableCell>
-                    {block.foundInMinutes}
-                  </TableCell>
-                  <TableCell>
-                    {block.blockReward ? `${block.blockReward.toFixed(3)} BTC` : 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    {block.txCount?.toLocaleString() || 'N/A'}
-                  </TableCell>
-                </TableRow>
-              ))}
+              ) : blocks?.map(block => {
+                const poolName = getPoolName(block.poolSlug, block.minerId);
+                return (
+                  <TableRow 
+                    key={block.id} 
+                    className="hover:bg-primary/5 cursor-pointer transition-colors"
+                  >
+                    <TableCell className="font-medium text-primary">
+                      <Link href={`/block-details/${block.number}`}>
+                        <a className="flex items-center">
+                          {block.number}
+                        </a>
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <div 
+                          className="w-3 h-3 rounded-full mr-2"
+                          style={{ 
+                            backgroundColor: getPoolColor(poolName)
+                          }}
+                        ></div>
+                        {poolName}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {formatBlockTimestamp(block.timestamp)}
+                    </TableCell>
+                    <TableCell>
+                      {block.foundInMinutes ? `${Number(block.foundInMinutes).toFixed(1)}` : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      {block.totalOutputAmount ? `${(block.totalOutputAmount / 100000000).toFixed(3)} BTC` : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      {block.txCount?.toLocaleString() || 'N/A'}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
@@ -114,8 +138,8 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
 }
 
 // Helper function to format timestamp
-function formatBlockTimestamp(timestamp: string) {
-  const date = new Date(timestamp);
+function formatBlockTimestamp(timestamp: string | Date) {
+  const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
   return `${formatDistanceToNow(date, { addSuffix: true })}`;
 }
 

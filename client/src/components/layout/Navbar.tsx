@@ -32,9 +32,6 @@ export default function Navbar() {
               <NavLink href="/bitcoin-mining" current={location === "/bitcoin-mining"}>
                 Bitcoin Mining
               </NavLink>
-              <NavLink href="/blocks-view" current={location === "/blocks-view"}>
-                Database View
-              </NavLink>
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
@@ -67,9 +64,6 @@ export default function Navbar() {
             </MobileNavLink>
             <MobileNavLink href="/bitcoin-mining" current={location === "/bitcoin-mining"}>
               Bitcoin Mining
-            </MobileNavLink>
-            <MobileNavLink href="/blocks-view" current={location === "/blocks-view"}>
-              Database View
             </MobileNavLink>
           </div>
           <div className="pt-4 pb-3 border-t border-border">

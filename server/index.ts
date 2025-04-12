@@ -3,6 +3,10 @@ import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
 import { apiRouter } from "./apis";
 import { checkDbConnection, resetConnectionPool } from "./db";
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 const app = express();
 app.use(express.json());

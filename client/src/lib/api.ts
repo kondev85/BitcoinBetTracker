@@ -10,6 +10,13 @@ import type {
   TimePeriod
 } from "./types";
 
+// Type for mempool.space mining pool data
+export interface MiningPoolHashrateData {
+  name: string;
+  value: number;
+  color: string;
+}
+
 // Blocks API
 export const fetchBlocks = async (limit?: number): Promise<Block[]> => {
   const url = limit ? `/api/blocks?limit=${limit}` : '/api/blocks';
@@ -114,4 +121,10 @@ export const updateMiningPool = async (name: string, pool: Partial<MiningPool>):
   queryClient.invalidateQueries({ queryKey: ['/api/mining-pools'] });
   
   return updatedPool;
+};
+
+// Mempool.space API
+export const fetchMempoolMiningPools = async (period: TimePeriod = '1w'): Promise<MiningPoolHashrateData[]> => {
+  const res = await apiRequest('GET', `/api/mempool/mining-pools/${period}`);
+  return res.json();
 };

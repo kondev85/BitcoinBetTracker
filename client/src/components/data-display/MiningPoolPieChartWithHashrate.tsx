@@ -12,12 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TimePeriod } from "@/lib/types";
-
-interface MiningPoolHashrateData {
-  name: string;
-  value: number;
-  color: string;
-}
+import { fetchMempoolMiningPools, MiningPoolHashrateData } from "@/lib/api";
 
 interface MiningPoolPieChartWithHashrateProps {
   data?: MiningPoolHashrateData[];
@@ -37,6 +32,7 @@ export default function MiningPoolPieChartWithHashrate({
 
   const { data: hashrateData, isLoading, error } = useQuery({
     queryKey: ['/api/mempool/mining-pools', activePeriod],
+    queryFn: () => fetchMempoolMiningPools(activePeriod),
     staleTime: 1000 * 60 * 15, // 15 minutes
   });
 
@@ -64,7 +60,11 @@ export default function MiningPoolPieChartWithHashrate({
         <div className="bg-background p-3 border rounded-md shadow-md">
           <p className="font-semibold">{data.name}</p>
           <p className="text-sm">
-            <span className="font-medium">Hashrate: </span>
+            <span className="font-medium">Blocks mined: </span>
+            {data.value}
+          </p>
+          <p className="text-sm">
+            <span className="font-medium">Percentage: </span>
             {percentage}%
           </p>
         </div>

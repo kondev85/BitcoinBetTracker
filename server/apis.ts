@@ -78,11 +78,23 @@ async function fetchAndCacheMiningPools(period: string = '1w'): Promise<any[]> {
       };
     }).sort((a: any, b: any) => b.value - a.value);
     
+    // Extract network stats from the response
+    const networkStats = {
+      lastEstimatedHashrate: poolsData.lastEstimatedHashrate || 0,
+      blockCount: poolsData.pools.reduce((sum: number, pool: any) => sum + pool.blockCount, 0)
+    };
+    
+    // Format the complete response
+    const formattedResponse = {
+      pools: formattedPools,
+      networkStats
+    };
+    
     // Cache the data in Redis if connected (expire after 15 minutes)
     if (redisClient) {
       try {
         const cacheKey = `mempool:mining-pools:${period}`;
-        await redisClient.set(cacheKey, JSON.stringify(formattedPools), {
+        await redisClient.set(cacheKey, JSON.stringify(formattedResponse), {
           EX: 15 * 60
         });
         console.log(`Cached mining pools data for ${period} in Redis`);
@@ -92,7 +104,7 @@ async function fetchAndCacheMiningPools(period: string = '1w'): Promise<any[]> {
       }
     }
     
-    return formattedPools;
+    return formattedResponse;
   } catch (error) {
     console.error('Error fetching mining pools data:', error);
     throw error;

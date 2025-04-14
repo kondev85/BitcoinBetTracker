@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TimePeriod } from "@/lib/types";
-import { fetchMempoolMiningPools, MiningPoolHashrateData } from "@/lib/api";
+import { fetchMempoolMiningPools, MiningPoolHashrateData, NetworkStats } from "@/lib/api";
 
 interface MiningPoolPieChartWithHashrateProps {
   data?: MiningPoolHashrateData[];
@@ -47,17 +47,24 @@ export default function MiningPoolPieChartWithHashrate({
     onPeriodChange?.(newPeriod);
   };
 
-  // Use provided data or API data
-  const rawData = propData || hashrateData || [];
+  // Helper function to format hashrate (convert to EH/s)
+  const formatHashrate = (hashrate: number): string => {
+    const ehashrate = hashrate / 1000000000000000000; // Convert to EH/s
+    return ehashrate.toFixed(2);
+  };
+  
+  // Extract pools data and network stats from the API response
+  const poolsData = propData || (hashrateData?.pools || []);
+  const networkStats = hashrateData?.networkStats || { lastEstimatedHashrate: 0, blockCount: 0 };
   
   // Group all but top 3 pools into an "Others" category as requested
   // This matches the business logic for the rest of the app for betting
   const MAX_INDIVIDUAL_POOLS = 3; // Only show top 3 pools individually
   
-  const totalValue = rawData.reduce((sum, item) => sum + item.value, 0);
+  const totalValue = poolsData.reduce((sum, item) => sum + item.value, 0);
   
   // Calculate percentage for each pool
-  const dataWithPercentage = rawData.map(item => ({
+  const dataWithPercentage = poolsData.map(item => ({
     ...item,
     percentage: (item.value / totalValue) * 100
   }));
@@ -113,27 +120,60 @@ export default function MiningPoolPieChartWithHashrate({
       
       // Check if this is the "Others" category
       if (data.name.includes('Others')) {
+        // Create a 2-column layout for small pools
+        const leftColumnPools = smallPools.filter((_, i) => i % 2 === 0);
+        const rightColumnPools = smallPools.filter((_, i) => i % 2 === 1);
+        
         return (
           <div className="bg-background p-3 border rounded-md shadow-md max-w-md">
-            <p className="font-semibold">{data.name}</p>
+            <div className="flex justify-between items-center mb-2">
+              <p className="font-semibold">{data.name}</p>
+              <p className="text-xs bg-muted px-1.5 py-0.5 rounded-sm">
+                Total blocks: <span className="font-semibold">{data.value}</span>
+              </p>
+            </div>
             <p className="text-sm mb-2">
-              <span className="font-medium">Total blocks: </span>
-              {data.value} ({percentage}%)
+              <span className="font-medium">Block share: </span>
+              {percentage}% of all blocks
             </p>
-            <div className="max-h-64 overflow-y-auto">
-              <p className="text-sm font-semibold mb-1">Included pools:</p>
-              {smallPools.slice(0, 15).map((pool, i) => {
-                const poolPct = ((pool.value / totalValue) * 100).toFixed(1);
-                return (
-                  <div key={i} className="text-xs flex justify-between mb-1">
-                    <span className="mr-2">{pool.name}</span>
-                    <span>{poolPct}%</span>
-                  </div>
-                );
-              })}
-              {smallPools.length > 15 && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  ...and {smallPools.length - 15} more
+            
+            <div className="max-h-64 overflow-y-auto pr-1">
+              <p className="text-sm font-semibold mb-2 border-b pb-1">Included pools:</p>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  {leftColumnPools.slice(0, 10).map((pool, i) => {
+                    const poolPct = ((pool.value / totalValue) * 100).toFixed(1);
+                    return (
+                      <div key={i} className="text-xs flex items-center mb-1.5">
+                        <div 
+                          className="w-2 h-2 rounded-full mr-1 flex-shrink-0" 
+                          style={{ backgroundColor: pool.color }}
+                        />
+                        <span className="truncate mr-1">{pool.name}</span>
+                        <span className="ml-auto text-muted-foreground">{poolPct}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex-1">
+                  {rightColumnPools.slice(0, 10).map((pool, i) => {
+                    const poolPct = ((pool.value / totalValue) * 100).toFixed(1);
+                    return (
+                      <div key={i} className="text-xs flex items-center mb-1.5">
+                        <div 
+                          className="w-2 h-2 rounded-full mr-1 flex-shrink-0" 
+                          style={{ backgroundColor: pool.color }}
+                        />
+                        <span className="truncate mr-1">{pool.name}</span>
+                        <span className="ml-auto text-muted-foreground">{poolPct}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              {smallPools.length > 20 && (
+                <p className="text-xs text-muted-foreground mt-2 border-t pt-1 text-center">
+                  ...and {smallPools.length - 20} more pools
                 </p>
               )}
             </div>
@@ -166,6 +206,21 @@ export default function MiningPoolPieChartWithHashrate({
         <CardDescription className="text-center">
           Real-time hashrate distribution from mempool.space
         </CardDescription>
+        
+        {/* Network Statistics */}
+        {!isLoading && !error && (
+          <div className="flex flex-col sm:flex-row justify-between gap-2 mt-3 mb-2 text-center">
+            <div className="bg-muted/30 px-3 py-2 rounded-md flex-1">
+              <p className="text-xs text-muted-foreground">Total Blocks</p>
+              <p className="text-lg font-semibold">{networkStats.blockCount}</p>
+            </div>
+            <div className="bg-muted/30 px-3 py-2 rounded-md flex-1">
+              <p className="text-xs text-muted-foreground">Network Hashrate</p>
+              <p className="text-lg font-semibold">{formatHashrate(networkStats.lastEstimatedHashrate)} EH/s</p>
+            </div>
+          </div>
+        )}
+        
         <div className="flex justify-center mt-4 space-x-2">
           <Button
             size="sm"

@@ -123,8 +123,17 @@ export const updateMiningPool = async (name: string, pool: Partial<MiningPool>):
   return updatedPool;
 };
 
+// Network stats interface for mempool.space data
+export interface NetworkStats {
+  lastEstimatedHashrate: number;
+  blockCount: number;
+}
+
 // Mempool.space API
-export const fetchMempoolMiningPools = async (period: TimePeriod = '1w'): Promise<MiningPoolHashrateData[]> => {
+export const fetchMempoolMiningPools = async (period: TimePeriod = '1w'): Promise<{
+  pools: MiningPoolHashrateData[];
+  networkStats: NetworkStats;
+}> => {
   const res = await apiRequest('GET', `/api/mempool/mining-pools/${period}`);
   return res.json();
 };

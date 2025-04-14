@@ -223,16 +223,8 @@ export default function MiningPoolPieChartWithHashrate({
               <p className="text-lg font-semibold">
                 {/* Use the appropriate period-specific hashrate or fallback to the standard one */}
                 {activePeriod === "24h" && formatHashrate(networkStats.lastEstimatedHashrate)}
-                {activePeriod === "3d" && formatHashrate(
-                  'lastEstimatedHashrate3d' in networkStats 
-                    ? networkStats.lastEstimatedHashrate3d 
-                    : networkStats.lastEstimatedHashrate
-                )}
-                {activePeriod === "1w" && formatHashrate(
-                  'lastEstimatedHashrate1w' in networkStats 
-                    ? networkStats.lastEstimatedHashrate1w 
-                    : networkStats.lastEstimatedHashrate
-                )} EH/s
+                {activePeriod === "3d" && formatHashrate(networkStats.lastEstimatedHashrate3d || networkStats.lastEstimatedHashrate)}
+                {activePeriod === "1w" && formatHashrate(networkStats.lastEstimatedHashrate1w || networkStats.lastEstimatedHashrate)} EH/s
               </p>
             </div>
           </div>

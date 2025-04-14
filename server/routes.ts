@@ -131,7 +131,7 @@ function getColorForPool(poolName: string): string {
     'Foundry USA': '#F7931A', // Bitcoin orange for Foundry
     'AntPool': '#3B82F6',     // Blue
     'F2Pool': '#10B981',      // Green
-    'ViaBTC': '#9333EA',      // Changed to purple to differentiate from Foundry
+    'ViaBTC': '#6D28D9',      // Changed to deep purple to differentiate from Foundry
     'Binance Pool': '#6366F1', // Indigo
     'Luxor': '#EC4899',       // Pink
     'SBI Crypto': '#06B6D4',  // Cyan

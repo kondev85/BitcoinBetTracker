@@ -50,10 +50,9 @@ export default function MiningPoolPieChartWithHashrate({
   // Use provided data or API data
   const rawData = propData || hashrateData || [];
   
-  // Group smaller pools into an "Others" category
-  // Only display top 8 individually, combine the rest
-  const OTHERS_THRESHOLD = 1.5; // Pools with less than 1.5% get grouped into Others
-  const MAX_INDIVIDUAL_POOLS = 8; // Show at most this many pools individually
+  // Group all but top 3 pools into an "Others" category as requested
+  // This matches the business logic for the rest of the app for betting
+  const MAX_INDIVIDUAL_POOLS = 3; // Only show top 3 pools individually
   
   const totalValue = rawData.reduce((sum, item) => sum + item.value, 0);
   
@@ -70,9 +69,9 @@ export default function MiningPoolPieChartWithHashrate({
   let othersValue = 0;
   let othersCount = 0;
   
-  // Take the larger pools and group smaller ones
+  // Take only the top 3 pools and group all others
   sortedData.forEach((pool, index) => {
-    if (index < MAX_INDIVIDUAL_POOLS && pool.percentage >= OTHERS_THRESHOLD) {
+    if (index < MAX_INDIVIDUAL_POOLS) {
       data.push(pool);
     } else {
       othersValue += pool.value;
@@ -103,7 +102,7 @@ export default function MiningPoolPieChartWithHashrate({
 
   // Get the list of all smaller pools that were grouped into "Others"
   const smallPools = sortedData.filter((pool, index) => 
-    index >= MAX_INDIVIDUAL_POOLS || pool.percentage < OTHERS_THRESHOLD
+    index >= MAX_INDIVIDUAL_POOLS
   ).sort((a, b) => b.value - a.value);
 
   // Custom tooltip
@@ -251,22 +250,47 @@ export default function MiningPoolPieChartWithHashrate({
               </ResponsiveContainer>
             </div>
             
-            {/* Summary stats - Top 3 pools */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
-              {data.slice(0, 3).map((pool, index) => {
-                const percentage = ((pool.value / totalHashrate) * 100).toFixed(1);
-                return (
-                  <div key={index} className="flex items-center space-x-2 p-2 border rounded-md">
-                    <div 
-                      className="w-4 h-4 rounded-full" 
-                      style={{ backgroundColor: pool.color }}
-                    />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{pool.name}</p>
-                      <p className="text-xs text-muted-foreground">{percentage}% of blocks</p>
+            {/* Summary stats - "Others" pool info card */}
+            <div className="w-full mt-4">
+              {data.map((pool, index) => {
+                if (pool.name.includes('Others')) {
+                  const percentage = ((pool.value / totalHashrate) * 100).toFixed(1);
+                  return (
+                    <div key={index} className="flex items-center p-3 border rounded-md bg-muted/30">
+                      <div className="w-full">
+                        <div className="flex items-center mb-2">
+                          <div 
+                            className="w-4 h-4 rounded-full mr-2" 
+                            style={{ backgroundColor: pool.color }}
+                          />
+                          <p className="text-sm font-medium">{pool.name}</p>
+                          <span className="ml-auto text-sm font-medium">{percentage}% of blocks</span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                          {smallPools.slice(0, 10).map((smallPool, i) => {
+                            const poolPct = ((smallPool.value / totalValue) * 100).toFixed(1);
+                            return (
+                              <div key={i} className="text-xs flex items-center">
+                                <div 
+                                  className="w-2 h-2 rounded-full mr-1 flex-shrink-0" 
+                                  style={{ backgroundColor: smallPool.color }}
+                                />
+                                <span className="truncate mr-1">{smallPool.name}</span>
+                                <span className="text-muted-foreground ml-auto">{poolPct}%</span>
+                              </div>
+                            );
+                          })}
+                          {smallPools.length > 10 && (
+                            <div className="text-xs text-muted-foreground col-span-full text-center mt-1">
+                              ...and {smallPools.length - 10} more pools (hover pie chart for details)
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                );
+                  );
+                }
+                return null;
               })}
             </div>
           </div>

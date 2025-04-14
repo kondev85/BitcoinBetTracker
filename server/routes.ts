@@ -16,6 +16,9 @@ import { z } from "zod";
 import { redisClient, initRedis } from "./redis";
 import axios from "axios";
 
+// Flag to track Redis connection
+let redisConnected = false;
+
 // Check database connection and verify existing tables
 async function initializeData() {
   try {
@@ -58,13 +61,22 @@ async function initializeData() {
 // Get mining pools data from mempool.space and cache it in Redis
 async function fetchAndCacheMiningPools(period: string = '1w'): Promise<any[]> {
   try {
-    // Check if data is in Redis cache
-    const cacheKey = `mempool:mining-pools:${period}`;
-    const cachedData = await redisClient.get(cacheKey);
-    
-    if (cachedData) {
-      console.log(`Using cached mining pools data for ${period}`);
-      return JSON.parse(cachedData);
+    // Check if data is in Redis cache (if Redis is connected)
+    if (redisConnected) {
+      const cacheKey = `mempool:mining-pools:${period}`;
+      try {
+        const cachedData = await redisClient.get(cacheKey);
+        
+        if (cachedData) {
+          console.log(`Using cached mining pools data for ${period}`);
+          return JSON.parse(cachedData);
+        }
+      } catch (redisError) {
+        console.error('Redis cache retrieval error:', redisError);
+        // Continue to fetch from API if Redis retrieval fails
+      }
+    } else {
+      console.log('Redis not connected, skipping cache lookup');
     }
     
     // Fetch data from mempool.space API
@@ -84,10 +96,19 @@ async function fetchAndCacheMiningPools(period: string = '1w'): Promise<any[]> {
       };
     }).sort((a: any, b: any) => b.value - a.value);
     
-    // Cache the data in Redis (expire after 15 minutes)
-    await redisClient.set(cacheKey, JSON.stringify(formattedPools), {
-      EX: 15 * 60
-    });
+    // Cache the data in Redis if connected (expire after 15 minutes)
+    if (redisConnected) {
+      try {
+        const cacheKey = `mempool:mining-pools:${period}`;
+        await redisClient.set(cacheKey, JSON.stringify(formattedPools), {
+          EX: 15 * 60
+        });
+        console.log(`Cached mining pools data for ${period} in Redis`);
+      } catch (redisError) {
+        console.error('Redis cache storing error:', redisError);
+        // Continue even if Redis storage fails
+      }
+    }
     
     return formattedPools;
   } catch (error) {
@@ -118,8 +139,10 @@ function getColorForPool(poolName: string): string {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize data from CSV
   await initializeData();
+  
   // Initialize Redis
-  await initRedis();
+  redisConnected = await initRedis();
+  console.log('Redis connection status:', redisConnected ? 'Connected' : 'Not connected');
 
   // API routes
   app.get("/api/blocks", async (req, res) => {

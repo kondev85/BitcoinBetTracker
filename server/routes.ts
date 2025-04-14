@@ -128,17 +128,23 @@ async function fetchAndCacheMiningPools(period: string = '1w'): Promise<any[]> {
 // Helper function to assign colors to mining pools
 function getColorForPool(poolName: string): string {
   const poolColors: Record<string, string> = {
-    'Foundry USA': '#F7931A',
-    'AntPool': '#3B82F6',
-    'F2Pool': '#10B981',
-    'ViaBTC': '#F59E0B',
-    'Binance Pool': '#8B5CF6',
-    'Luxor': '#EC4899',
-    'SBI Crypto': '#06B6D4',
-    'Poolin': '#EF4444',
-    'BTC.com': '#8B5CF6',
-    'MARA Pool': '#84CC16',
-    'SlushPool': '#2563EB'
+    'Foundry USA': '#F7931A', // Bitcoin orange for Foundry
+    'AntPool': '#3B82F6',     // Blue
+    'F2Pool': '#10B981',      // Green
+    'ViaBTC': '#9333EA',      // Changed to purple to differentiate from Foundry
+    'Binance Pool': '#6366F1', // Indigo
+    'Luxor': '#EC4899',       // Pink
+    'SBI Crypto': '#06B6D4',  // Cyan
+    'Poolin': '#EF4444',      // Red
+    'BTC.com': '#0EA5E9',     // Sky blue
+    'MARA Pool': '#84CC16',   // Lime green
+    'SlushPool': '#2563EB',   // Royal blue
+    'SECPOOL': '#8B5CF6',     // Violet
+    'Mining Squared': '#F472B6', // Pink
+    'OCEAN': '#0D9488',       // Teal
+    'SpiderPool': '#FB923C',  // Orange
+    'WhitePool': '#A1A1AA',   // Zinc/gray
+    'Carbon Negative': '#22C55E' // Green
   };
   
   return poolColors[poolName] || `#${Math.floor(Math.random()*16777215).toString(16)}`;

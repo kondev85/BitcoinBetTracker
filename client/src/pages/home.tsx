@@ -4,7 +4,7 @@ import { Clock, Database, BarChart2, Scale } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import MiningPoolPieChart from "@/components/data-display/MiningPoolPieChart";
+import MiningPoolPieChartWithHashrate from "@/components/data-display/MiningPoolPieChartWithHashrate";
 import BlocksTable from "@/components/data-display/BlocksTable";
 import MiningStats from "@/components/data-display/MiningStats";
 import BettingCard from "@/components/data-display/BettingCard";
@@ -152,7 +152,7 @@ export default function Home() {
       {/* Section B: Mining Pools Distribution */}
       <section className="py-12 bg-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <MiningPoolPieChart period={timePeriod} onPeriodChange={setTimePeriod} />
+          <MiningPoolPieChartWithHashrate period={timePeriod} onPeriodChange={setTimePeriod} />
         </div>
       </section>
 

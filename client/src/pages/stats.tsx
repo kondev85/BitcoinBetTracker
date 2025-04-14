@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import MainLayout from "@/components/layout/MainLayout";
 import BlocksTable from "@/components/data-display/BlocksTable";
-import MiningPoolPieChart from "@/components/data-display/MiningPoolPieChart";
 import MiningPoolPieChartWithHashrate from "@/components/data-display/MiningPoolPieChartWithHashrate";
 import MiningStats from "@/components/data-display/MiningStats";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -28,15 +27,7 @@ export default function Stats() {
           </div>
           
           {/* Mining Pool Distribution */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-            {/* Database Mining Pool Distribution */}
-            <div className="mb-6">
-              <MiningPoolPieChart 
-                period={timePeriod} 
-                onPeriodChange={setTimePeriod} 
-              />
-            </div>
-            
+          <div className="mb-12">
             {/* Real-time Mempool.space Mining Pool Distribution */}
             <div className="mb-6">
               <MiningPoolPieChartWithHashrate 

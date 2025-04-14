@@ -156,10 +156,11 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
                   className="border-b border-gray-800 hover:bg-gray-900"
                 >
                   <TableCell className="font-medium text-orange-500">
-                    <Link href={`/block-details/${block.number}`}>
-                      <a>
-                        {block.number}
-                      </a>
+                    <Link 
+                      href={`/block-details/${block.number}`}
+                      className="text-orange-500 hover:underline"
+                    >
+                      {block.number}
                     </Link>
                   </TableCell>
                   <TableCell>
@@ -198,9 +199,13 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
         
         {showViewAllLink && (
           <div className="flex justify-center mt-6">
-            <Link href="/stats">
-              <Button variant="link" className="text-primary">View all blocks</Button>
-            </Link>
+            <Button 
+              variant="link" 
+              className="text-primary"
+              onClick={() => window.location.href = "/stats"}
+            >
+              View all blocks
+            </Button>
           </div>
         )}
       </CardContent>

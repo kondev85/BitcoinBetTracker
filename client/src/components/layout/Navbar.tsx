@@ -87,32 +87,30 @@ interface NavLinkProps {
 
 function NavLink({ href, current, children }: NavLinkProps) {
   return (
-    <Link href={href}>
-      <a
-        className={`${
-          current
-            ? "border-primary text-foreground"
-            : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
-        } px-1 pt-1 border-b-2 text-sm font-medium`}
-      >
-        {children}
-      </a>
+    <Link 
+      href={href}
+      className={`${
+        current
+          ? "border-primary text-foreground"
+          : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
+      } px-1 pt-1 border-b-2 text-sm font-medium`}
+    >
+      {children}
     </Link>
   );
 }
 
 function MobileNavLink({ href, current, children }: NavLinkProps) {
   return (
-    <Link href={href}>
-      <a
-        className={`${
-          current
-            ? "bg-secondary text-foreground border-l-4 border-primary"
-            : "border-transparent text-muted-foreground hover:bg-secondary hover:border-border hover:text-foreground"
-        } block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}
-      >
-        {children}
-      </a>
+    <Link 
+      href={href}
+      className={`${
+        current
+          ? "bg-secondary text-foreground border-l-4 border-primary"
+          : "border-transparent text-muted-foreground hover:bg-secondary hover:border-border hover:text-foreground"
+      } block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}
+    >
+      {children}
     </Link>
   );
 }

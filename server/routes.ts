@@ -13,11 +13,8 @@ import {
   insertReserveAddressSchema
 } from "@shared/schema";
 import { z } from "zod";
-import { redisClient, initRedis } from "./redis";
+import { getRedisClient } from "./redis";
 import axios from "axios";
-
-// Flag to track Redis connection
-let redisConnected = false;
 
 // Check database connection and verify existing tables
 async function initializeData() {
@@ -61,8 +58,11 @@ async function initializeData() {
 // Get mining pools data from mempool.space and cache it in Redis
 async function fetchAndCacheMiningPools(period: string = '1w'): Promise<any[]> {
   try {
+    // Get Redis client if available
+    const redisClient = getRedisClient();
+    
     // Check if data is in Redis cache (if Redis is connected)
-    if (redisConnected) {
+    if (redisClient) {
       const cacheKey = `mempool:mining-pools:${period}`;
       try {
         const cachedData = await redisClient.get(cacheKey);
@@ -97,7 +97,7 @@ async function fetchAndCacheMiningPools(period: string = '1w'): Promise<any[]> {
     }).sort((a: any, b: any) => b.value - a.value);
     
     // Cache the data in Redis if connected (expire after 15 minutes)
-    if (redisConnected) {
+    if (redisClient) {
       try {
         const cacheKey = `mempool:mining-pools:${period}`;
         await redisClient.set(cacheKey, JSON.stringify(formattedPools), {
@@ -140,9 +140,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize data from CSV
   await initializeData();
   
-  // Initialize Redis
-  redisConnected = await initRedis();
-  console.log('Redis connection status:', redisConnected ? 'Connected' : 'Not connected');
+  // Initialize Redis - we don't need to do anything since redis will try to connect automatically
+  // and our getRedisClient() function will handle connection status
 
   // API routes
   app.get("/api/blocks", async (req, res) => {

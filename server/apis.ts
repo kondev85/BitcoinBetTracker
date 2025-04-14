@@ -1,6 +1,90 @@
 import { Router } from 'express';
 import { repository } from './repository';
 import { z } from 'zod';
+import axios from 'axios';
+import { getRedisClient } from './redis';
+
+// Flag to track Redis connection
+let redisConnected = false;
+
+// Helper function to assign colors to mining pools
+function getColorForPool(poolName: string): string {
+  const poolColors: Record<string, string> = {
+    'Foundry USA': '#F7931A',
+    'AntPool': '#3B82F6',
+    'F2Pool': '#10B981',
+    'ViaBTC': '#F59E0B',
+    'Binance Pool': '#8B5CF6',
+    'Luxor': '#EC4899',
+    'SBI Crypto': '#06B6D4',
+    'Poolin': '#EF4444',
+    'BTC.com': '#8B5CF6',
+    'MARA Pool': '#84CC16',
+    'SlushPool': '#2563EB'
+  };
+  
+  return poolColors[poolName] || `#${Math.floor(Math.random()*16777215).toString(16)}`;
+}
+
+// Get mining pools data from mempool.space and cache it in Redis
+async function fetchAndCacheMiningPools(period: string = '1w'): Promise<any[]> {
+  try {
+    // Check if data is in Redis cache (if Redis is connected)
+    const redisClient = getRedisClient();
+    if (redisClient) {
+      const cacheKey = `mempool:mining-pools:${period}`;
+      try {
+        const cachedData = await redisClient.get(cacheKey);
+        
+        if (cachedData) {
+          console.log(`Using cached mining pools data for ${period}`);
+          return JSON.parse(cachedData);
+        }
+      } catch (redisError) {
+        console.error('Redis cache retrieval error:', redisError);
+        // Continue to fetch from API if Redis retrieval fails
+      }
+    } else {
+      console.log('Redis not connected, skipping cache lookup');
+    }
+    
+    // Fetch data from mempool.space API
+    console.log(`Fetching fresh mining pools data for ${period} from mempool.space`);
+    const response = await axios.get(`https://mempool.space/api/v1/mining/pools/${period}`);
+    const pools = response.data;
+    
+    // Process and format the data
+    const formattedPools = pools.map((pool: any) => {
+      // Generate a color if not available (simple function to assign colors)
+      const color = getColorForPool(pool.name);
+      
+      return {
+        name: pool.name,
+        value: pool.blockCount,
+        color: color
+      };
+    }).sort((a: any, b: any) => b.value - a.value);
+    
+    // Cache the data in Redis if connected (expire after 15 minutes)
+    if (redisClient) {
+      try {
+        const cacheKey = `mempool:mining-pools:${period}`;
+        await redisClient.set(cacheKey, JSON.stringify(formattedPools), {
+          EX: 15 * 60
+        });
+        console.log(`Cached mining pools data for ${period} in Redis`);
+      } catch (redisError) {
+        console.error('Redis cache storing error:', redisError);
+        // Continue even if Redis storage fails
+      }
+    }
+    
+    return formattedPools;
+  } catch (error) {
+    console.error('Error fetching mining pools data:', error);
+    throw error;
+  }
+}
 
 // Create a router to handle API requests
 const apiRouter = Router();
@@ -143,5 +227,28 @@ apiRouter.get('/health', async (req, res) => {
     });
   }
 });
+
+// GET /api/mempool/mining-pools/:period - Get mining pool data from mempool.space API
+apiRouter.get('/mempool/mining-pools/:period?', async (req, res) => {
+  try {
+    const period = req.params.period || '1w';
+    // Validate period - only allow 24h, 3d, or 1w
+    if (!['24h', '3d', '1w'].includes(period)) {
+      return res.status(400).json({ error: "Invalid period. Allowed values: 24h, 3d, 1w" });
+    }
+    
+    const poolsData = await fetchAndCacheMiningPools(period);
+    res.json(poolsData);
+  } catch (error) {
+    console.error('Error in /api/mempool/mining-pools endpoint:', error);
+    res.status(500).json({ error: "Failed to fetch mining pool data from mempool.space" });
+  }
+});
+
+// Set the redisConnected flag - this should be called during initialization
+export const setRedisConnected = (isConnected: boolean) => {
+  redisConnected = isConnected;
+  console.log('Redis connection status set to:', redisConnected ? 'Connected' : 'Not connected');
+};
 
 export { apiRouter };

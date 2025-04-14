@@ -1,8 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
-import { apiRouter } from "./apis";
+import { apiRouter, setRedisConnected } from "./apis";
 import { checkDbConnection, resetConnectionPool } from "./db";
+import { initRedis } from "./redis";
 import dotenv from 'dotenv';
 
 // Load environment variables from .env file
@@ -70,6 +71,11 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   } else {
     console.log("Successfully connected to the database.");
   }
+  
+  // Initialize Redis
+  const redisConnected = await initRedis();
+  setRedisConnected(redisConnected);
+  console.log('Redis connection status:', redisConnected ? 'Connected' : 'Not connected');
 
   // Set up Vite or serve static files
   if (app.get("env") === "development") {

@@ -126,6 +126,8 @@ export const updateMiningPool = async (name: string, pool: Partial<MiningPool>):
 // Network stats interface for mempool.space data
 export interface NetworkStats {
   lastEstimatedHashrate: number;
+  lastEstimatedHashrate3d: number;
+  lastEstimatedHashrate1w: number;
   blockCount: number;
 }
 

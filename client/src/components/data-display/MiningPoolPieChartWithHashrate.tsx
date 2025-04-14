@@ -150,7 +150,9 @@ export default function MiningPoolPieChartWithHashrate({
                           style={{ backgroundColor: pool.color }}
                         />
                         <span className="truncate mr-1">{pool.name}</span>
-                        <span className="ml-auto text-muted-foreground">{poolPct}%</span>
+                        <span className="ml-auto text-muted-foreground">
+                          {pool.value} blocks ({poolPct}%)
+                        </span>
                       </div>
                     );
                   })}
@@ -165,7 +167,9 @@ export default function MiningPoolPieChartWithHashrate({
                           style={{ backgroundColor: pool.color }}
                         />
                         <span className="truncate mr-1">{pool.name}</span>
-                        <span className="ml-auto text-muted-foreground">{poolPct}%</span>
+                        <span className="ml-auto text-muted-foreground">
+                          {pool.value} blocks ({poolPct}%)
+                        </span>
                       </div>
                     );
                   })}
@@ -216,7 +220,20 @@ export default function MiningPoolPieChartWithHashrate({
             </div>
             <div className="bg-muted/30 px-3 py-2 rounded-md flex-1">
               <p className="text-xs text-muted-foreground">Network Hashrate</p>
-              <p className="text-lg font-semibold">{formatHashrate(networkStats.lastEstimatedHashrate)} EH/s</p>
+              <p className="text-lg font-semibold">
+                {/* Use the appropriate period-specific hashrate or fallback to the standard one */}
+                {activePeriod === "24h" && formatHashrate(networkStats.lastEstimatedHashrate)}
+                {activePeriod === "3d" && formatHashrate(
+                  'lastEstimatedHashrate3d' in networkStats 
+                    ? networkStats.lastEstimatedHashrate3d 
+                    : networkStats.lastEstimatedHashrate
+                )}
+                {activePeriod === "1w" && formatHashrate(
+                  'lastEstimatedHashrate1w' in networkStats 
+                    ? networkStats.lastEstimatedHashrate1w 
+                    : networkStats.lastEstimatedHashrate
+                )} EH/s
+              </p>
             </div>
           </div>
         )}
@@ -331,7 +348,9 @@ export default function MiningPoolPieChartWithHashrate({
                                   style={{ backgroundColor: smallPool.color }}
                                 />
                                 <span className="truncate mr-1">{smallPool.name}</span>
-                                <span className="text-muted-foreground ml-auto">{poolPct}%</span>
+                                <span className="text-muted-foreground ml-auto">
+                                  {smallPool.value} blocks ({poolPct}%)
+                                </span>
                               </div>
                             );
                           })}

@@ -78,9 +78,11 @@ async function fetchAndCacheMiningPools(period: string = '1w'): Promise<any[]> {
       };
     }).sort((a: any, b: any) => b.value - a.value);
     
-    // Extract network stats from the response
+    // Extract network stats from the response with period-specific hashrates
     const networkStats = {
       lastEstimatedHashrate: poolsData.lastEstimatedHashrate || 0,
+      lastEstimatedHashrate3d: poolsData.lastEstimatedHashrate3d || 0,
+      lastEstimatedHashrate1w: poolsData.lastEstimatedHashrate1w || 0,
       blockCount: poolsData.pools.reduce((sum: number, pool: any) => sum + pool.blockCount, 0)
     };
     

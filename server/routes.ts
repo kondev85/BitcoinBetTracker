@@ -82,10 +82,17 @@ async function fetchAndCacheMiningPools(period: string = '1w'): Promise<any[]> {
     // Fetch data from mempool.space API
     console.log(`Fetching fresh mining pools data for ${period} from mempool.space`);
     const response = await axios.get(`https://mempool.space/api/v1/mining/pools/${period}`);
-    const pools = response.data;
+    
+    // The API returns an object with a 'pools' property containing the array
+    const poolsData = response.data;
+    
+    if (!poolsData || !poolsData.pools || !Array.isArray(poolsData.pools)) {
+      console.error('Unexpected API response format:', poolsData);
+      throw new Error('Invalid API response format from mempool.space');
+    }
     
     // Process and format the data
-    const formattedPools = pools.map((pool: any) => {
+    const formattedPools = poolsData.pools.map((pool: any) => {
       // Generate a color if not available (simple function to assign colors)
       const color = getColorForPool(pool.name);
       
@@ -97,6 +104,7 @@ async function fetchAndCacheMiningPools(period: string = '1w'): Promise<any[]> {
     }).sort((a: any, b: any) => b.value - a.value);
     
     // Cache the data in Redis if connected (expire after 15 minutes)
+    const redisClient = getRedisClient();
     if (redisClient) {
       try {
         const cacheKey = `mempool:mining-pools:${period}`;

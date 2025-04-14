@@ -125,7 +125,7 @@ export default function MiningPoolPieChartWithHashrate({
         const rightColumnPools = smallPools.filter((_, i) => i % 2 === 1);
         
         return (
-          <div className="bg-background p-3 border rounded-md shadow-md max-w-md">
+          <div className="bg-background p-4 border rounded-md shadow-md" style={{ width: '520px', maxWidth: '100vw' }}>
             <div className="flex justify-between items-center mb-2">
               <p className="font-semibold">{data.name}</p>
               <p className="text-xs bg-muted px-1.5 py-0.5 rounded-sm">
@@ -139,7 +139,7 @@ export default function MiningPoolPieChartWithHashrate({
             
             <div className="max-h-64 overflow-y-auto pr-1">
               <p className="text-sm font-semibold mb-2 border-b pb-1">Included pools:</p>
-              <div className="flex gap-2">
+              <div className="flex gap-4">
                 <div className="flex-1">
                   {leftColumnPools.slice(0, 10).map((pool, i) => {
                     const poolPct = ((pool.value / totalValue) * 100).toFixed(1);
@@ -149,8 +149,8 @@ export default function MiningPoolPieChartWithHashrate({
                           className="w-2 h-2 rounded-full mr-1 flex-shrink-0" 
                           style={{ backgroundColor: pool.color }}
                         />
-                        <span className="truncate mr-1">{pool.name}</span>
-                        <span className="ml-auto text-muted-foreground">
+                        <span className="truncate mr-1 min-w-20">{pool.name}</span>
+                        <span className="ml-auto text-muted-foreground whitespace-nowrap">
                           {pool.value} blocks ({poolPct}%)
                         </span>
                       </div>
@@ -166,8 +166,8 @@ export default function MiningPoolPieChartWithHashrate({
                           className="w-2 h-2 rounded-full mr-1 flex-shrink-0" 
                           style={{ backgroundColor: pool.color }}
                         />
-                        <span className="truncate mr-1">{pool.name}</span>
-                        <span className="ml-auto text-muted-foreground">
+                        <span className="truncate mr-1 min-w-20">{pool.name}</span>
+                        <span className="ml-auto text-muted-foreground whitespace-nowrap">
                           {pool.value} blocks ({poolPct}%)
                         </span>
                       </div>
@@ -349,7 +349,7 @@ export default function MiningPoolPieChartWithHashrate({
                                 />
                                 <span className="truncate mr-1">{smallPool.name}</span>
                                 <span className="text-muted-foreground ml-auto">
-                                  {smallPool.value} blocks ({poolPct}%)
+                                  {poolPct}%
                                 </span>
                               </div>
                             );

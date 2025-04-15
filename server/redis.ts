@@ -46,8 +46,24 @@ export async function initRedis(): Promise<boolean> {
       });
       
       // Set up error handler
+      // Enhanced error and connection event handlers
       redisClient.on('error', (err) => {
         console.error('Redis Client Error:', err);
+        console.error('Redis Connection Details:', {
+          error: err.message,
+          code: err.code,
+          syscall: err.syscall,
+          address: err.address,
+          port: err.port
+        });
+      });
+
+      redisClient.on('connect', () => {
+        console.log('Redis client connected successfully');
+      });
+
+      redisClient.on('reconnecting', () => {
+        console.log('Redis client attempting to reconnect...');
       });
     }
     

@@ -33,6 +33,7 @@ export async function initRedis(): Promise<boolean> {
     // Always create a new client if we don't have one or if it's not open
     if (!redisClient || !redisClient.isOpen) {
       redisClient = createClient({
+        url: process.env.REDIS_URL || 'redis://127.0.0.1:6379',
         socket: {
           reconnectStrategy: (retries) => {
             // Don't retry more than MAX_RETRY_ATTEMPTS times

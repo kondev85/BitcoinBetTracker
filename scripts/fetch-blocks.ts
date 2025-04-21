@@ -53,11 +53,11 @@ async function getBlocksAtHeight(height: number): Promise<MempoolBlock[]> {
       throw new Error(`Invalid response format from ${url}`);
     }
     
-    // Sort blocks by height to ensure consistent processing
-    blocks.sort((a, b) => a.height - b.height);
-    console.log(`[mempool] Found ${blocks.length} blocks at height ${height}`);
+    // Filter to only include blocks at the exact height we requested
+    const filteredBlocks = blocks.filter(block => block.height === height);
+    console.log(`[mempool] Found ${filteredBlocks.length} blocks at height ${height} (filtered from ${blocks.length} total)`);
     
-    return blocks;
+    return filteredBlocks;
   } catch (error) {
     console.error(`[mempool] Error fetching blocks at height ${height}:`, error);
     throw error;
@@ -94,10 +94,33 @@ async function getLatestBlockFromDb(): Promise<number | null> {
   }
 }
 
+// Check if a block already exists in the database
+async function blockExistsInDb(height: number): Promise<boolean> {
+  try {
+    const [existingBlock] = await db
+      .select({ id: schema.blocks.id })
+      .from(schema.blocks)
+      .where(eq(schema.blocks.number, height))
+      .limit(1);
+    
+    return !!existingBlock;
+  } catch (error) {
+    console.error(`[mempool] Error checking if block ${height} exists:`, error);
+    return false;
+  }
+}
+
 // Process a single mempool block and store it in the database
 async function processBlock(block: MempoolBlock): Promise<void> {
   try {
     console.log(`[mempool] Processing block ${block.height}...`);
+    
+    // Check if the block already exists in the database
+    const exists = await blockExistsInDb(block.height);
+    if (exists) {
+      console.log(`[mempool] Block ${block.height} already exists in database, skipping`);
+      return;
+    }
     
     // Get the previous block's timestamp for time difference calculation
     const [previousBlock] = await db
@@ -139,7 +162,7 @@ async function processBlock(block: MempoolBlock): Promise<void> {
       txCount: block.tx_count
     };
     
-    // Insert the block, ignore if it already exists
+    // Insert the block
     await db.insert(schema.blocks)
       .values(blockData)
       .onConflictDoNothing();

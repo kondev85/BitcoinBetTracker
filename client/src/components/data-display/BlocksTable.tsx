@@ -24,6 +24,50 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
     queryFn: () => fetchBlocks(limit),
   });
 
+  // Helper function to standardize pool slugs
+  const standardizePoolSlug = (slug: string | null): string => {
+    if (!slug) return 'unknown';
+    
+    // Map of pool name variations to standard slugs
+    const poolSlugMap: Record<string, string> = {
+      // Foundry variations
+      'foundry-usa': 'foundryusa',
+      'foundryusa': 'foundryusa',
+      // MARA variations
+      'mara-pool': 'marapool',
+      'marapool': 'marapool',
+      // Binance variations
+      'binance-pool': 'binancepool',
+      'binancepool': 'binancepool',
+      // Carbon variations
+      'carbon-neutral': 'carbonnegative',
+      'carbonneutral': 'carbonnegative',
+      'carbon-negative': 'carbonnegative',
+      'carbonnegative': 'carbonnegative',
+      // Spider variations
+      'spider-pool': 'spiderpool',
+      'spiderpool': 'spiderpool',
+      // SBI variations
+      'sbi-crypto': 'sbicrypto',
+      'sbicrypto': 'sbicrypto',
+      // Other common variations
+      'btc.com': 'btccom',
+      'btccom': 'btccom',
+      'secpool': 'secpool',
+      'sec-pool': 'secpool',
+      'mining-squared': 'miningsquared',
+      'miningsquared': 'miningsquared',
+      'slush-pool': 'slushpool',
+      'slushpool': 'slushpool',
+      'braiins-pool': 'slushpool',
+      'braiinspool': 'slushpool',
+      'unknown': 'unknown'
+    };
+    
+    const normalizedSlug = slug.toLowerCase();
+    return poolSlugMap[normalizedSlug] || normalizedSlug;
+  };
+
   // Map pool slugs to proper names
   const poolSlugsToNames: Record<string, string> = {
     'foundryusa': 'Foundry USA',
@@ -49,7 +93,12 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
     'blocksmith': 'Blocksmith',
     'cryptoforge': 'Crypto Forge',
     'hashpool': 'HashPool',
-    'bitdeer': 'BitDeer'
+    'bitdeer': 'BitDeer',
+    'spiderpool': 'SpiderPool',
+    'carbonnegative': 'Carbon Negative',
+    'ocean': 'OCEAN',
+    'ultimuspool': 'ULTIMUS Pool',
+    'unknown': 'Unknown Pool'
   };
   
   // Map pool slugs to colors
@@ -57,27 +106,32 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
     'foundryusa': '#F7931A', // Bitcoin orange
     'antpool': '#3B82F6',    // Blue
     'f2pool': '#10B981',     // Green
-    'binancepool': '#8B5CF6', // Purple
-    'viabtc': '#F59E0B',     // Amber
-    'btccom': '#EC4899',     // Pink
-    'poolin': '#06B6D4',     // Cyan
-    'luxor': '#6366F1',      // Indigo
-    'slushpool': '#4ADE80',  // Green
-    'marapool': '#EF4444',   // Red
-    'secpool': '#A3E635',    // Lime
-    'sbicrypto': '#D946EF',  // Fuchsia
-    'miningsquared': '#0EA5E9', // Sky blue
+    'binancepool': '#6366F1', // Indigo
+    'viabtc': '#6D28D9',     // Deep purple
+    'btccom': '#0EA5E9',     // Sky blue
+    'poolin': '#EF4444',     // Red
+    'luxor': '#EC4899',      // Pink
+    'slushpool': '#2563EB',  // Royal blue
+    'marapool': '#84CC16',   // Lime green
+    'secpool': '#8B5CF6',    // Violet
+    'sbicrypto': '#06B6D4',  // Cyan
+    'miningsquared': '#F472B6', // Pink
+    'spiderpool': '#FB923C', // Orange
+    'carbonnegative': '#22C55E', // Green
+    'ocean': '#0D9488',      // Teal
     'innopolistech': '#84CC16', // Lime green
     'rigpool': '#9333EA',    // Purple
     'satoshifloor': '#F97316', // Orange
     'ultimatepool': '#DC2626', // Red
+    'ultimuspool': '#DC2626', // Red
     'digitalfarm': '#2563EB', // Blue
     'ckpool': '#CA8A04',     // Yellow
     'kncminer': '#C026D3',   // Fuchsia
     'blocksmith': '#14B8A6',  // Teal
     'cryptoforge': '#7C3AED', // Violet
     'hashpool': '#EA580C',   // Orange
-    'bitdeer': '#0369A1'     // Blue
+    'bitdeer': '#0369A1',    // Blue
+    'unknown': '#A3A3A3'     // Gray
   };
 
   return (
@@ -168,12 +222,14 @@ export default function BlocksTable({ limit = 5, showViewAllLink = true }: Block
                       <div 
                         className="w-3 h-3 rounded-full mr-2"
                         style={{ 
-                          backgroundColor: block.poolSlug && poolSlugsToColors[block.poolSlug] 
-                            ? poolSlugsToColors[block.poolSlug] 
+                          backgroundColor: block.poolSlug 
+                            ? poolSlugsToColors[standardizePoolSlug(block.poolSlug)] || '#6B7280' 
                             : '#6B7280' // default gray
                         }}
                       ></div>
-                      {block.poolSlug ? poolSlugsToNames[block.poolSlug] || 'Unknown Pool' : 'Unknown Pool'}
+                      {block.poolSlug 
+                        ? poolSlugsToNames[standardizePoolSlug(block.poolSlug)] || 'Unknown Pool' 
+                        : 'Unknown Pool'}
                     </div>
                   </TableCell>
                   <TableCell>

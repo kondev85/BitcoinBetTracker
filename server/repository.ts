@@ -84,7 +84,7 @@ export class Repository {
       FROM 
         miners m
       LEFT JOIN 
-        blocks b ON m.id = b.miner_id
+        blocks b ON m.name = b.pool_slug
       GROUP BY 
         m.id, m.name, m.hashrate
       ORDER BY 

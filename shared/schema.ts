@@ -17,7 +17,6 @@ export const miners = pgTable("miners", {
 export const blocks = pgTable("blocks", {
   id: serial("id").primaryKey(),
   number: integer("number").notNull().unique(), // Block height
-  minerId: integer("miner_id").notNull(),
   poolSlug: text("pool_slug"), // Mempool.space API pool identifier
   timestamp: timestamp("timestamp").notNull(),
   status: text("status").notNull(), // pending, completed
@@ -94,7 +93,6 @@ export const insertMinerSchema = createInsertSchema(miners).pick({
 
 export const insertBlockSchema = createInsertSchema(blocks).pick({
   number: true,
-  minerId: true,
   poolSlug: true,
   timestamp: true,
   status: true,

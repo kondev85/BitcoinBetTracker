@@ -73,6 +73,23 @@ You can also run the script manually whenever you want to update the database wi
 npx tsx scripts/fetch-blocks.ts
 ```
 
+### Catching Up with the Blockchain
+
+If your database is far behind the current blockchain height, you can use the provided catch-up script to automatically process blocks in batches:
+
+```bash
+# Make the script executable (if not already)
+chmod +x scripts/catch-up.sh
+
+# Run the catch-up process with default settings (100 blocks per batch, 800 total)
+./scripts/catch-up.sh
+
+# Customize batch size and total blocks
+./scripts/catch-up.sh 50 400  # Process 400 blocks in batches of 50
+```
+
+This script will automatically run the `fetch-blocks.ts` script multiple times to catch up with the blockchain, waiting between batches to avoid rate limiting issues.
+
 ## Troubleshooting
 
 If you encounter issues with the block fetching:

@@ -2,43 +2,81 @@ import { db, pool } from '../server/db';
 import * as schema from '../shared/schema';
 import axios from 'axios';
 import { eq, desc, sql } from 'drizzle-orm';
+import { type InsertBlock } from '../shared/schema';
 
-// Mempool.space API base URL
+// Constants
 const MEMPOOL_API_BASE = 'https://mempool.space/api/v1';
+const BATCH_SIZE = 15; // Number of blocks to process in one batch
+const API_RATE_LIMIT_DELAY = 2000; // Delay between API calls in ms to avoid rate limiting
 
-// Function to fetch recent blocks from mempool.space API
-async function fetchRecentBlocks(limit: number = 10): Promise<any[]> {
+// Interface for block data from mempool.space API
+interface MempoolBlock {
+  height: number;
+  size: number;
+  tx_count: number;
+  id: string;  // block hash
+  extras?: {
+    pool?: {
+      name?: string;
+      slug?: string;
+    };
+    totalFees?: number;
+  };
+  timestamp: number;
+  reward?: number;
+}
+
+// Function to fetch tip height (current blockchain height)
+async function getCurrentBlockHeight(): Promise<number> {
   try {
-    console.log(`Fetching ${limit} recent blocks from mempool.space API...`);
-    const response = await axios.get(`${MEMPOOL_API_BASE}/blocks`, { 
-      params: { limit }
-    });
-    
-    if (!Array.isArray(response.data)) {
-      console.error('Invalid API response, expected array:', response.data);
-      return [];
-    }
-    
-    return response.data;
+    console.log('[mempool] Fetching current block height...');
+    const response = await axios.get(`${MEMPOOL_API_BASE}/blocks/tip/height`);
+    const height = response.data;
+    console.log(`[mempool] Current blockchain height: ${height}`);
+    return height;
   } catch (error) {
-    console.error('Error fetching blocks from mempool.space:', error);
-    return [];
+    console.error('[mempool] Error fetching current block height:', error);
+    throw error;
   }
 }
 
-// Function to get block details with mining pool info from mempool.space API
+// Function to fetch blocks at a specific height
+async function getBlocksAtHeight(height: number): Promise<MempoolBlock[]> {
+  try {
+    const url = `${MEMPOOL_API_BASE}/blocks/${height}`;
+    console.log(`[mempool] Fetching blocks at height: ${height}`);
+    
+    const response = await axios.get(url);
+    const blocks = response.data;
+    
+    if (!Array.isArray(blocks)) {
+      throw new Error(`Invalid response format from ${url}`);
+    }
+    
+    // Sort blocks by height to ensure consistent processing
+    blocks.sort((a, b) => a.height - b.height);
+    console.log(`[mempool] Found ${blocks.length} blocks at height ${height}`);
+    
+    return blocks;
+  } catch (error) {
+    console.error(`[mempool] Error fetching blocks at height ${height}:`, error);
+    throw error;
+  }
+}
+
+// Function to fetch block details with mining pool info
 async function fetchBlockDetails(hash: string): Promise<any> {
   try {
-    console.log(`Fetching details for block ${hash}...`);
+    console.log(`[mempool] Fetching details for block ${hash}...`);
     const response = await axios.get(`${MEMPOOL_API_BASE}/block/${hash}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching details for block ${hash}:`, error);
+    console.error(`[mempool] Error fetching details for block ${hash}:`, error);
     return null;
   }
 }
 
-// Function to get the last block in our database
+// Function to get the latest block in our database
 async function getLatestBlockFromDb(): Promise<number | null> {
   try {
     const [latestBlock] = await db.select({
@@ -48,119 +86,172 @@ async function getLatestBlockFromDb(): Promise<number | null> {
     .orderBy(desc(schema.blocks.number))
     .limit(1);
     
+    console.log(`[mempool] Latest block in database: ${latestBlock?.number || 'None'}`);
     return latestBlock ? latestBlock.number : null;
   } catch (error) {
-    console.error('Error getting latest block from database:', error);
+    console.error('[mempool] Error getting latest block from database:', error);
     return null;
   }
 }
 
-// Function to calculate time difference in minutes between two blocks
-function calculateTimeDifference(currentBlockTime: number, previousBlockTime: number): number {
-  // Convert to minutes
-  return (currentBlockTime - previousBlockTime) / 60;
-}
-
-// Function to store a block in the database
-async function storeBlock(blockData: any, previousBlockTime: number | null = null): Promise<void> {
+// Process a single mempool block and store it in the database
+async function processBlock(block: MempoolBlock): Promise<void> {
   try {
-    const blockTime = blockData.timestamp;
+    console.log(`[mempool] Processing block ${block.height}...`);
     
-    // Calculate time since last block if we have previous block data
-    const foundInMinutes = previousBlockTime 
-      ? calculateTimeDifference(blockTime, previousBlockTime)
+    // Get the previous block's timestamp for time difference calculation
+    const [previousBlock] = await db
+      .select({ timestamp: schema.blocks.timestamp })
+      .from(schema.blocks)
+      .where(eq(schema.blocks.number, block.height - 1))
+      .limit(1);
+    
+    // Calculate time since previous block (in minutes)
+    const blockTimestamp = new Date(block.timestamp * 1000);
+    const previousTimestamp = previousBlock?.timestamp;
+    const foundInMinutes = previousTimestamp 
+      ? (blockTimestamp.getTime() - previousTimestamp.getTime()) / (1000 * 60)
       : null;
     
-    // Prepare block data for insertion
-    const blockToInsert = {
-      number: blockData.height,
-      poolSlug: blockData.extras?.pool_slug || blockData.pool?.slug || null,
-      timestamp: new Date(blockTime * 1000), // Convert UNIX timestamp to Date
+    // Normalize pool slug
+    const poolSlug = block.extras?.pool?.slug || 
+                     (block.extras?.pool?.name || 'unknown')
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]/g, '');
+    
+    // Convert subsidy amount (block reward) plus fees to total output
+    const blockSubsidy = 3.125; // Current block subsidy as of April 2024 halving
+    const fees = block.extras?.totalFees ? block.extras.totalFees / 100000000 : 0; // Convert sats to BTC
+    const totalOutput = blockSubsidy + fees;
+    
+    // Create block data for insertion
+    const blockData: InsertBlock = {
+      number: block.height,
+      poolSlug,
+      timestamp: blockTimestamp,
       status: 'completed',
       isPublished: false,
       foundInMinutes,
-      // These fields might be null if not available in the API response
-      totalOutputAmount: blockData.extras?.totalOutputAmount || blockData.reward || null,
-      fees: blockData.extras?.fees || null,
-      size: blockData.size ? blockData.size / 1000000 : null, // Convert bytes to MB
-      txCount: blockData.tx_count || null,
+      totalOutputAmount: totalOutput || block.reward || 0,
+      totalInputAmount: null, // Typically calculated elsewhere
+      fees,
+      size: block.size ? block.size / 1000000 : null, // Convert bytes to MB
+      txCount: block.tx_count
     };
     
     // Insert the block, ignore if it already exists
     await db.insert(schema.blocks)
-      .values(blockToInsert)
+      .values(blockData)
       .onConflictDoNothing();
     
-    console.log(`Stored block ${blockData.height} in database`);
+    console.log(`[mempool] Successfully stored block ${block.height}`);
   } catch (error) {
-    console.error(`Error storing block ${blockData.height}:`, error);
+    // Check for duplicate key error (block already exists)
+    if (error instanceof Error && error.message.includes('duplicate key')) {
+      console.log(`[mempool] Block ${block.height} already exists, skipping`);
+    } else {
+      console.error(`[mempool] Error processing block ${block.height}:`, error);
+      throw error;
+    }
   }
 }
 
-// Main function to fetch and store blocks
-async function syncRecentBlocks(blocksToFetch: number = 10): Promise<void> {
+// Process a batch of blocks
+async function processBatch(startHeight: number, endHeight: number): Promise<number> {
+  let processedCount = 0;
+  
+  // Process blocks in sequence from start to end height
+  for (let height = startHeight; height <= endHeight; height++) {
+    try {
+      // Fetch blocks at current height
+      const mempoolBlocks = await getBlocksAtHeight(height);
+      
+      // If no blocks found at this height, continue
+      if (mempoolBlocks.length === 0) {
+        console.log(`[mempool] No blocks found at height ${height}, skipping`);
+        continue;
+      }
+      
+      // Process each block at this height
+      for (const block of mempoolBlocks) {
+        await processBlock(block);
+        processedCount++;
+      }
+      
+      // Add small delay between API calls to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, API_RATE_LIMIT_DELAY));
+    } catch (error) {
+      console.error(`[mempool] Error processing height ${height}:`, error);
+      // Continue with the next height rather than aborting the whole batch
+    }
+  }
+  
+  return processedCount;
+}
+
+// Main function to sync blocks
+async function syncBlocks(blocksToProcess: number = 50): Promise<void> {
+  console.log(`[mempool] Starting block sync process for up to ${blocksToProcess} blocks...`);
+  
   try {
     // Get the latest block from our database
     const latestBlockInDb = await getLatestBlockFromDb();
-    console.log(`Latest block in database: ${latestBlockInDb || 'None'}`);
+    const startHeight = latestBlockInDb ? latestBlockInDb + 1 : 880000; // Start from a reasonable default if no blocks
     
-    // Fetch recent blocks from mempool.space
-    const recentBlocks = await fetchRecentBlocks(blocksToFetch);
+    // Get current blockchain height
+    const currentHeight = await getCurrentBlockHeight();
     
-    if (recentBlocks.length === 0) {
-      console.log('No blocks fetched from API, exiting');
+    if (currentHeight < startHeight) {
+      console.log(`[mempool] Database appears to be ahead of blockchain, nothing to sync`);
       return;
     }
     
-    console.log(`Fetched ${recentBlocks.length} blocks from API`);
+    // Calculate how many blocks we could process
+    const totalBlocksToSync = Math.min(currentHeight - startHeight + 1, blocksToProcess);
+    console.log(`[mempool] Need to sync ${totalBlocksToSync} blocks from ${startHeight} to ${startHeight + totalBlocksToSync - 1}`);
     
-    // Filter out blocks we already have (if any)
-    const newBlocks = latestBlockInDb 
-      ? recentBlocks.filter(block => block.height > latestBlockInDb)
-      : recentBlocks;
+    // Calculate number of batches needed
+    const batchCount = Math.ceil(totalBlocksToSync / BATCH_SIZE);
+    console.log(`[mempool] Will process in ${batchCount} batches of ${BATCH_SIZE} blocks each`);
     
-    console.log(`Found ${newBlocks.length} new blocks to add`);
+    let totalProcessed = 0;
     
-    // Sort blocks by height (ascending) to process them in order
-    newBlocks.sort((a, b) => a.height - b.height);
-    
-    // Fetch detailed information for each block and store it
-    let previousBlockTime = null;
-    
-    for (const block of newBlocks) {
-      // Fetch additional details if available
-      const blockDetails = await fetchBlockDetails(block.id);
+    // Process blocks in batches to avoid overloading the API and database
+    for (let i = 0; i < batchCount; i++) {
+      const batchStartHeight = startHeight + (i * BATCH_SIZE);
+      const batchEndHeight = Math.min(batchStartHeight + BATCH_SIZE - 1, startHeight + totalBlocksToSync - 1);
       
-      // Merge basic and detailed information
-      const enrichedBlock = { 
-        ...block, 
-        extras: blockDetails 
-      };
+      console.log(`[mempool] Processing batch ${i + 1}/${batchCount}: heights ${batchStartHeight} to ${batchEndHeight}`);
       
-      // Store the block in the database
-      await storeBlock(enrichedBlock, previousBlockTime);
+      const processedInBatch = await processBatch(batchStartHeight, batchEndHeight);
+      totalProcessed += processedInBatch;
       
-      // Update previous block time for next iteration
-      previousBlockTime = block.timestamp;
+      console.log(`[mempool] Completed batch ${i + 1}/${batchCount}, processed ${processedInBatch} blocks`);
+      
+      // Add delay between batches
+      if (i < batchCount - 1) {
+        console.log(`[mempool] Waiting before next batch...`);
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
     }
     
-    console.log(`Successfully synced ${newBlocks.length} new blocks`);
+    console.log(`[mempool] Block sync completed. Total blocks processed: ${totalProcessed}`);
   } catch (error) {
-    console.error('Error syncing recent blocks:', error);
-  } finally {
-    // Close the database connection
-    await pool.end();
+    console.error('[mempool] Error during block sync:', error);
+    throw error;
   }
 }
 
 // Run the script
-const blocksToFetch = process.argv[2] ? parseInt(process.argv[2]) : 10;
-syncRecentBlocks(blocksToFetch)
+const blocksToFetch = process.argv[2] ? parseInt(process.argv[2]) : 50;
+
+console.log(`Starting block sync for up to ${blocksToFetch} blocks...`);
+syncBlocks(blocksToFetch)
   .then(() => {
-    console.log('Block sync completed');
-    process.exit(0);
+    console.log('Block sync completed successfully');
+    pool.end().then(() => process.exit(0));
   })
   .catch(error => {
-    console.error('Error running block sync:', error);
-    process.exit(1);
+    console.error('Error during block sync:', error);
+    pool.end().then(() => process.exit(1));
   });

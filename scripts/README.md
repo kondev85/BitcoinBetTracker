@@ -15,12 +15,29 @@ This directory contains utility scripts for the Bitcoin Block Betting Platform.
 
 - `fetch-blocks.ts`: Fetches and stores recent blocks from the Mempool.space API
   ```
-  # Fetch the default 10 most recent blocks
+  # Fetch the default 50 most recent blocks
   npx tsx scripts/fetch-blocks.ts
   
-  # Fetch a specific number of blocks (e.g., 25)
-  npx tsx scripts/fetch-blocks.ts 25
+  # Fetch a specific number of blocks (e.g., 100)
+  npx tsx scripts/fetch-blocks.ts 100
   ```
+
+## How Block Fetching Works
+
+The `fetch-blocks.ts` script automatically syncs your database with the Bitcoin blockchain by:
+
+1. Finding the most recent block height in your database
+2. Determining the current blockchain height from the Mempool.space API
+3. Fetching data for all missing blocks in efficient batches
+4. Calculating accurate time differences between blocks
+5. Storing properly formatted data in your database
+
+The script includes:
+- Intelligent batching to avoid API rate limits
+- Proper error handling to continue even if individual blocks fail
+- Automatic conversion of block size from bytes to MB
+- Calculation of block subsidy + fees for total output amount
+- Pool slug normalization for consistency with Mempool.space data
 
 ## Setting Up Automated Block Fetching
 
@@ -33,7 +50,7 @@ To keep your database up-to-date with the latest blockchain data, you can set up
 crontab -e
 
 # Add a line to run the script every 5 minutes
-*/5 * * * * cd /path/to/your/app && npx tsx scripts/fetch-blocks.ts 5
+*/5 * * * * cd /path/to/your/app && npx tsx scripts/fetch-blocks.ts 10
 ```
 
 ### Using with a Process Manager
@@ -45,7 +62,7 @@ If you're using a process manager like PM2, you can set up the script as a sched
 npm install -g pm2
 
 # Set up the script to run every 5 minutes
-pm2 start scripts/fetch-blocks.ts --name "block-fetcher" --cron "*/5 * * * *" -- 5
+pm2 start scripts/fetch-blocks.ts --name "block-fetcher" --cron "*/5 * * * *" -- 10
 ```
 
 ### Running Manually
@@ -55,3 +72,11 @@ You can also run the script manually whenever you want to update the database wi
 ```bash
 npx tsx scripts/fetch-blocks.ts
 ```
+
+## Troubleshooting
+
+If you encounter issues with the block fetching:
+
+1. **Rate limiting**: The script includes delays between API calls, but you may need to increase the `API_RATE_LIMIT_DELAY` constant if you encounter rate limiting from Mempool.space
+2. **Missing data**: Some blocks may have incomplete data from the API; the script handles this gracefully and inserts what's available
+3. **Duplicate blocks**: The script uses `onConflictDoNothing()` to safely ignore blocks that already exist

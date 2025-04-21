@@ -1,24 +1,12 @@
-import { pgTable, text, serial, integer, timestamp, real, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, real, boolean, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-
-// Basic miner information (constant data)
-export const miners = pgTable("miners", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  hashrate: real("hashrate").notNull(),                 // Hashrate percentage (0-100%)
-  absoluteHashrate: real("absolute_hashrate"),          // Absolute hashrate in EH/s
-  averageHashrate: real("average_hashrate"),            // Average hashrate percentage over time
-  lastHashrateUpdate: timestamp("last_hashrate_update"), // When the hashrate was last updated
-  networkHashrate: real("network_hashrate"),            // Network hashrate in EH/s
-});
 
 // Block event information
 export const blocks = pgTable("blocks", {
   id: serial("id").primaryKey(),
   number: integer("number").notNull().unique(), // Block height
-  minerId: integer("miner_id").notNull(),
-  poolSlug: text("pool_slug"), // Mempool.space API pool identifier
+  poolSlug: text("pool_slug").notNull(), // Mempool.space API pool identifier
   timestamp: timestamp("timestamp").notNull(),
   status: text("status").notNull(), // pending, completed
   isPublished: boolean("is_published").notNull().default(false),
@@ -30,11 +18,11 @@ export const blocks = pgTable("blocks", {
   txCount: integer("tx_count"), // Number of transactions
 });
 
-// Block-specific miner odds and addresses
+// Block-specific pool odds and addresses
 export const blockMinerOdds = pgTable("block_miner_odds", {
   id: serial("id").primaryKey(),
   blockNumber: integer("block_number").notNull(),
-  minerId: integer("miner_id"), // Made nullable for time-based odds
+  poolSlug: text("pool_slug"), // Made nullable for time-based odds
 
   // Hit odds and addresses
   hitOdds: real("hit_odds").notNull().default(2.0),
@@ -72,7 +60,7 @@ export const blockMinerOdds = pgTable("block_miner_odds", {
 export const bets = pgTable("bets", {
   id: serial("id").primaryKey(),
   blockId: integer("block_id").notNull(),
-  minerId: integer("miner_id").notNull(),
+  poolSlug: text("pool_slug").notNull(),
   amount: real("amount").notNull(),
   odds: real("odds").notNull(),
   isNoHitBet: boolean("is_no_hit_bet").notNull().default(false),
@@ -82,19 +70,18 @@ export const bets = pgTable("bets", {
   timestamp: timestamp("timestamp").notNull(),
 });
 
-// Schemas for data insertion
-export const insertMinerSchema = createInsertSchema(miners).pick({
-  name: true,
-  hashrate: true,
-  absoluteHashrate: true,
-  averageHashrate: true,
-  lastHashrateUpdate: true,
-  networkHashrate: true,
+// Hashrate history tracking
+export const hashrateHistory = pgTable("hashrate_history", {
+  pool_slug: text("pool_slug").primaryKey(),
+  pool_name: text("pool_name").notNull(),
+  hashrate_24h: real("hashrate_24h").notNull(),
+  hashrate_3d: real("hashrate_3d").notNull(),
+  hashrate_1w: real("hashrate_1w").notNull()
 });
 
+// Schemas for data insertion
 export const insertBlockSchema = createInsertSchema(blocks).pick({
   number: true,
-  minerId: true,
   poolSlug: true,
   timestamp: true,
   status: true,
@@ -111,7 +98,7 @@ export const insertBlockMinerOddsSchema = createInsertSchema(blockMinerOdds);
 
 export const insertBetSchema = createInsertSchema(bets).pick({
   blockId: true,
-  minerId: true,
+  poolSlug: true,
   amount: true,
   odds: true,
   isNoHitBet: true,
@@ -119,12 +106,14 @@ export const insertBetSchema = createInsertSchema(bets).pick({
   isOverMinutes: true,
 });
 
+export const insertHashrateHistorySchema = createInsertSchema(hashrateHistory);
+
 // Types for use in application code
-export type InsertMiner = z.infer<typeof insertMinerSchema>;
 export type InsertBlock = z.infer<typeof insertBlockSchema>;
 export type InsertBlockMinerOdds = z.infer<typeof insertBlockMinerOddsSchema>;
 export type InsertBet = z.infer<typeof insertBetSchema>;
-export type Miner = typeof miners.$inferSelect;
+export type InsertHashrateHistory = z.infer<typeof insertHashrateHistorySchema>;
 export type Block = typeof blocks.$inferSelect;
 export type BlockMinerOdds = typeof blockMinerOdds.$inferSelect;
 export type Bet = typeof bets.$inferSelect;
+export type HashrateHistory = typeof hashrateHistory.$inferSelect;

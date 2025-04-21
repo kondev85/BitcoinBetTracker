@@ -159,9 +159,22 @@ async function processBlock(block: MempoolBlock): Promise<void> {
 // Process a batch of blocks
 async function processBatch(startHeight: number, endHeight: number): Promise<number> {
   let processedCount = 0;
+  const totalHeights = endHeight - startHeight + 1;
   
   // Process blocks in sequence from start to end height
-  for (let height = startHeight; height <= endHeight; height++) {
+  for (let i = 0; i <= totalHeights - 1; i++) {
+    const height = startHeight + i;
+    const progress = Math.round((i / totalHeights) * 100);
+    
+    // Create a progress bar
+    const progressBar = Array(20).fill('▯');
+    const filledCount = Math.floor(progress / 5);
+    for (let j = 0; j < filledCount; j++) {
+      progressBar[j] = '▮';
+    }
+    
+    console.log(`[mempool] PROGRESS: ${progress}% |${progressBar.join('')}| Processing block height ${height} of ${endHeight} in current batch`);
+    
     try {
       // Fetch blocks at current height
       const mempoolBlocks = await getBlocksAtHeight(height);
@@ -187,6 +200,39 @@ async function processBatch(startHeight: number, endHeight: number): Promise<num
   }
   
   return processedCount;
+}
+
+// Function to print overall progress information
+async function printOverallProgress(startHeight: number, currentBatchEnd: number, currentHeight: number): Promise<void> {
+  try {
+    // Calculate overall progress
+    const totalToSync = currentHeight - startHeight + 1;
+    const synced = currentBatchEnd - startHeight + 1;
+    const overallProgress = Math.round((synced / totalToSync) * 100);
+    
+    // Get counts from database
+    const [result] = await db.select({
+      count: sql`count(*)`.as('count')
+    }).from(schema.blocks);
+    
+    const databaseCount = result?.count || 0;
+    
+    // Create a progress bar
+    const progressBar = Array(30).fill('▯');
+    const filledCount = Math.floor(overallProgress / (100 / 30));
+    for (let j = 0; j < filledCount; j++) {
+      progressBar[j] = '▮';
+    }
+    
+    console.log(`\n[mempool] OVERALL PROGRESS: ${overallProgress}% |${progressBar.join('')}|`);
+    console.log(`[mempool] Blocks in database: ${databaseCount}`);
+    console.log(`[mempool] Synced ${synced} out of ${totalToSync} blocks (${currentHeight - currentBatchEnd} blocks remaining)`);
+    console.log(`[mempool] Current database height: ${currentBatchEnd}`);
+    console.log(`[mempool] Current blockchain height: ${currentHeight}`);
+    console.log(`[mempool] Gap remaining: ${currentHeight - currentBatchEnd} blocks\n`);
+  } catch (error) {
+    console.error('[mempool] Error printing progress:', error);
+  }
 }
 
 // Main function to sync blocks
@@ -221,10 +267,14 @@ async function syncBlocks(blocksToProcess: number = 50): Promise<void> {
       const batchStartHeight = startHeight + (i * BATCH_SIZE);
       const batchEndHeight = Math.min(batchStartHeight + BATCH_SIZE - 1, startHeight + totalBlocksToSync - 1);
       
-      console.log(`[mempool] Processing batch ${i + 1}/${batchCount}: heights ${batchStartHeight} to ${batchEndHeight}`);
+      console.log(`\n[mempool] ===== BATCH ${i + 1}/${batchCount} =====`);
+      console.log(`[mempool] Processing heights ${batchStartHeight} to ${batchEndHeight}`);
       
       const processedInBatch = await processBatch(batchStartHeight, batchEndHeight);
       totalProcessed += processedInBatch;
+      
+      // Print overall progress after each batch
+      await printOverallProgress(startHeight, batchEndHeight, currentHeight);
       
       console.log(`[mempool] Completed batch ${i + 1}/${batchCount}, processed ${processedInBatch} blocks`);
       
@@ -235,7 +285,9 @@ async function syncBlocks(blocksToProcess: number = 50): Promise<void> {
       }
     }
     
-    console.log(`[mempool] Block sync completed. Total blocks processed: ${totalProcessed}`);
+    console.log(`\n[mempool] Block sync completed. Total blocks processed: ${totalProcessed}`);
+    // Final progress report
+    await printOverallProgress(startHeight, startHeight + totalBlocksToSync - 1, currentHeight);
   } catch (error) {
     console.error('[mempool] Error during block sync:', error);
     throw error;

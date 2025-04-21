@@ -137,10 +137,42 @@ async function processBlock(block: MempoolBlock): Promise<void> {
       : null;
     
     // Normalize pool slug
-    const poolSlug = block.extras?.pool?.slug || 
-                     (block.extras?.pool?.name || 'unknown')
-                      .toLowerCase()
-                      .replace(/[^a-z0-9]/g, '');
+    let poolSlug = '';
+    
+    if (block.extras?.pool?.slug) {
+      // Use the slug provided by the API, but normalize it for consistency
+      poolSlug = block.extras.pool.slug.toLowerCase();
+    } else if (block.extras?.pool?.name) {
+      // Convert name to slug format if no slug is provided
+      poolSlug = block.extras.pool.name.toLowerCase();
+    } else {
+      poolSlug = 'unknown';
+    }
+    
+    // Standardize common pool names for consistency
+    switch (poolSlug) {
+      case 'foundry-usa':
+      case 'foundryusa':
+        poolSlug = 'foundryusa';
+        break;
+      case 'mara-pool':
+      case 'marapool':
+        poolSlug = 'marapool';
+        break;
+      case 'binance-pool':
+      case 'binancepool':
+        poolSlug = 'binancepool';
+        break;
+      case 'carbon-neutral':
+      case 'carbonneutral':
+      case 'carbon-negative':
+      case 'carbonnegative':
+        poolSlug = 'carbonnegative';
+        break;
+      default:
+        // Remove special characters for consistent formatting
+        poolSlug = poolSlug.replace(/[^a-z0-9]/g, '');
+    }
     
     // Convert subsidy amount (block reward) plus fees to total output
     const blockSubsidy = 3.125; // Current block subsidy as of April 2024 halving

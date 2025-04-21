@@ -7,8 +7,54 @@ import { getRedisClient } from './redis';
 // Flag to track Redis connection
 let redisConnected = false;
 
+// Helper function to standardize pool names for consistent display and coloring
+function standardizePoolName(poolName: string): string {
+  // Map of pool name variations to standard names
+  const poolNameMap: Record<string, string> = {
+    // Foundry variations
+    'foundry-usa': 'Foundry USA',
+    'foundryusa': 'Foundry USA',
+    // MARA variations
+    'mara-pool': 'MARA Pool',
+    'marapool': 'MARA Pool',
+    // Binance variations
+    'binance-pool': 'Binance Pool',
+    'binancepool': 'Binance Pool',
+    // Carbon variations
+    'carbon-neutral': 'Carbon Negative',
+    'carbonneutral': 'Carbon Negative',
+    'carbon-negative': 'Carbon Negative',
+    'carbonnegative': 'Carbon Negative',
+    // Spider variations
+    'spider-pool': 'SpiderPool',
+    'spiderpool': 'SpiderPool',
+    // SBI variations
+    'sbi-crypto': 'SBI Crypto',
+    'sbicrypto': 'SBI Crypto',
+    // Other common variations
+    'btc.com': 'BTC.com',
+    'btccom': 'BTC.com',
+    'secpool': 'SECPOOL',
+    'mining-squared': 'Mining Squared',
+    'miningsquared': 'Mining Squared',
+    'unknown': 'Unknown'
+  };
+  
+  // Check if the pool name (lowercased) is in our map
+  const normalizedName = poolName.toLowerCase().replace(/[\s\-\.]/g, '');
+  if (poolNameMap[normalizedName]) {
+    return poolNameMap[normalizedName];
+  }
+  
+  // If not in our map, return the original name
+  return poolName;
+}
+
 // Helper function to assign colors to mining pools
 function getColorForPool(poolName: string): string {
+  // First, standardize the pool name
+  const standardizedName = standardizePoolName(poolName);
+  
   const poolColors: Record<string, string> = {
     'Foundry USA': '#F7931A', // Bitcoin orange for Foundry
     'AntPool': '#3B82F6',     // Blue
@@ -26,14 +72,30 @@ function getColorForPool(poolName: string): string {
     'OCEAN': '#0D9488',       // Teal
     'SpiderPool': '#FB923C',  // Orange
     'WhitePool': '#A1A1AA',   // Zinc/gray
-    'Carbon Negative': '#22C55E' // Green
+    'Carbon Negative': '#22C55E', // Green
+    'Unknown': '#A3A3A3'      // Gray
   };
   
-  return poolColors[poolName] || `#${Math.floor(Math.random()*16777215).toString(16)}`;
+  return poolColors[standardizedName] || `#${Math.floor(Math.random()*16777215).toString(16)}`;
+}
+
+// Response type for mining pools data
+interface MiningPoolsResponse {
+  pools: Array<{
+    name: string;
+    value: number;
+    color: string;
+  }>;
+  networkStats: {
+    lastEstimatedHashrate: number;
+    lastEstimatedHashrate3d: number;
+    lastEstimatedHashrate1w: number;
+    blockCount: number;
+  };
 }
 
 // Get mining pools data from mempool.space and cache it in Redis
-async function fetchAndCacheMiningPools(period: string = '1w'): Promise<any[]> {
+async function fetchAndCacheMiningPools(period: string = '1w'): Promise<MiningPoolsResponse> {
   try {
     // Check if data is in Redis cache (if Redis is connected)
     const redisClient = getRedisClient();
@@ -68,11 +130,13 @@ async function fetchAndCacheMiningPools(period: string = '1w'): Promise<any[]> {
     
     // Process and format the data
     const formattedPools = poolsData.pools.map((pool: any) => {
-      // Generate a color if not available (simple function to assign colors)
-      const color = getColorForPool(pool.name);
+      // Standardize the pool name
+      const standardizedName = standardizePoolName(pool.name);
+      // Get color based on standardized name
+      const color = getColorForPool(standardizedName);
       
       return {
-        name: pool.name,
+        name: standardizedName,
         value: pool.blockCount,
         color: color
       };

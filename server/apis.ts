@@ -4,6 +4,9 @@ import { z } from 'zod';
 import axios from 'axios';
 import { getRedisClient } from './redis';
 
+// Create the router
+const apiRouter = Router();
+
 // Flag to track Redis connection
 let redisConnected = false;
 
@@ -177,8 +180,7 @@ async function fetchAndCacheMiningPools(period: string = '1w'): Promise<MiningPo
   }
 }
 
-// Create a router to handle API requests
-const apiRouter = Router();
+// Add routes to the API router
 
 // GET /api/blocks - Get all blocks
 apiRouter.get('/blocks', async (req, res) => {
@@ -316,6 +318,57 @@ apiRouter.get('/health', async (req, res) => {
       status: 'error',
       message: 'Health check failed'
     });
+  }
+});
+
+// GET /api/mining-stats/:blockCount - Calculate mining statistics
+apiRouter.get('/mining-stats/:blockCount', async (req, res) => {
+  try {
+    console.log("API endpoint /api/mining-stats/:blockCount called");
+    const blockCount = parseInt(req.params.blockCount);
+    console.log(`Fetching stats for ${blockCount} blocks`);
+    const blocks = await repository.getRecentBlocks(blockCount);
+    console.log(`Found ${blocks.length} blocks`);
+    const miners = await repository.getAllMiners();
+    console.log(`Found ${miners.length} miners`);
+    
+    // Count blocks by mining pool
+    const blocksByPool: Record<string, number> = {};
+    blocks.forEach(block => {
+      // Our blocks have miningPool property 
+      const miningPool = miners.find(p => p.name === block.miningPool)?.name || 'Unknown';
+      
+      if (!blocksByPool[miningPool]) {
+        blocksByPool[miningPool] = 0;
+      }
+      blocksByPool[miningPool]++;
+    });
+    
+    // Calculate mining pool hashrates based on block proportion
+    const totalBlocks = blocks.length;
+    const poolStats = miners.map(pool => {
+      const blocksFound = blocksByPool[pool.name] || 0;
+      // Use weekly hashrate for better accuracy in calculating expected blocks
+      const hashratePct = pool.hashrate1w || 0;
+      const expected = (hashratePct * totalBlocks) / 100;
+      const luck = expected > 0 ? (blocksFound / expected) * 100 : 0;
+      
+      return {
+        name: pool.name,
+        displayName: pool.displayName || pool.name,
+        color: pool.color,
+        hashratePct,
+        expectedBlocks: expected,
+        actualBlocks: blocksFound,
+        luck
+      };
+    }).filter(pool => pool.hashratePct > 0 || pool.actualBlocks > 0)
+      .sort((a, b) => b.hashratePct - a.hashratePct);
+    
+    res.json(poolStats);
+  } catch (error) {
+    console.error('Error calculating mining stats:', error);
+    res.status(500).json({ error: "Failed to calculate mining stats" });
   }
 });
 

@@ -330,7 +330,7 @@ apiRouter.get('/mining-stats/:blockCount', async (req, res) => {
     const blockCount = parseInt(req.params.blockCount);
     console.log(`Fetching stats for ${blockCount} blocks`);
     
-    // Get the most recent blocks
+    // Get the most recent blocks for actual block count
     const blocks = await repository.getRecentBlocks(blockCount);
     console.log(`Found ${blocks.length} blocks`);
     
@@ -348,64 +348,86 @@ apiRouter.get('/mining-stats/:blockCount', async (req, res) => {
     
     console.log('Pool blocks count:', Object.entries(blocksByPool).map(([pool, count]) => `${pool}: ${count}`).join(', '));
     
-    // Now, use SQL to get hashrate history data directly 
-    const hashrateQuery = `
-      SELECT 
-        pool_slug, 
-        pool_name, 
-        hashrate_24h,
-        hashrate_3d,
-        hashrate_1w
-      FROM 
-        hashrate_history
-      WHERE 
-        pool_slug != 'total'
-    `;
+    // Get mining pool data directly from mempool.space API with caching
+    // We use 1w period for more stable hashrate percentages
+    const period = '1w';
     
-    const hashrates = await db.execute(sql.raw(hashrateQuery));
-    console.log(`Found ${hashrates.rows.length} mining pool entries in hashrate_history`);
+    // Check if data is in Redis cache (if Redis is connected)
+    const redisClient = getRedisClient();
+    let mempoolPoolsData;
     
-    // Get total network hashrate
-    const totalHashrateQuery = `
-      SELECT 
-        hashrate_1w 
-      FROM 
-        hashrate_history 
-      WHERE 
-        pool_slug = 'total' 
-      LIMIT 1
-    `;
+    if (redisClient) {
+      const cacheKey = `mempool:mining-pools:${period}`;
+      try {
+        const cachedData = await redisClient.get(cacheKey);
+        
+        if (cachedData) {
+          console.log(`Using cached mining pools data for ${period}`);
+          mempoolPoolsData = JSON.parse(cachedData);
+        }
+      } catch (redisError) {
+        console.error('Redis cache retrieval error:', redisError);
+        // Continue to fetch from API if Redis retrieval fails
+      }
+    }
     
-    const totalResult = await db.execute(sql.raw(totalHashrateQuery));
-    const totalNetworkHashrate = totalResult.rows.length > 0 ? parseFloat(totalResult.rows[0].hashrate_1w) : 0;
-    console.log(`Total network hashrate: ${totalNetworkHashrate}`);
-    
-    // Calculate pool stats
-    const poolStats = hashrates.rows.map((pool: any) => {
-      // Normalize pool names/slugs for comparison
-      const poolNormalized = pool.pool_slug.toLowerCase().replace(/[\s\-\.]/g, '');
+    // If not in cache, fetch directly
+    if (!mempoolPoolsData) {
+      console.log(`Fetching fresh mining pools data for ${period} from mempool.space`);
+      const response = await axios.get(`https://mempool.space/api/v1/mining/pools/${period}`);
       
-      const blocksFound = blocksByPool[poolNormalized] || 0;
+      if (!response.data || !response.data.pools || !Array.isArray(response.data.pools)) {
+        throw new Error('Invalid API response format from mempool.space');
+      }
       
-      // Calculate weekly hashrate percentage
-      const absoluteHashrate = parseFloat(pool.hashrate_1w) || 0;
-      const hashratePercent = totalNetworkHashrate > 0 ? (absoluteHashrate / totalNetworkHashrate) * 100 : 0;
+      mempoolPoolsData = response.data;
+      
+      // Cache the data in Redis if connected (expire after 1 hour)
+      if (redisClient) {
+        try {
+          await redisClient.set(`mempool:mining-pools:${period}`, JSON.stringify(mempoolPoolsData), {
+            EX: 60 * 60 // 1 hour expiration
+          });
+          console.log(`Cached mining pools data for ${period} in Redis`);
+        } catch (redisError) {
+          console.error('Redis cache storing error:', redisError);
+        }
+      }
+    }
+    
+    // Process the mempool.space data
+    const totalBlocks = mempoolPoolsData.pools.reduce((sum: number, pool: any) => sum + pool.blockCount, 0);
+    console.log(`Total blocks from mempool API (${period}): ${totalBlocks}`);
+    
+    // Format and calculate the stats
+    const poolStats = mempoolPoolsData.pools.map((pool: any) => {
+      // Standardize the pool name
+      const standardizedName = standardizePoolName(pool.name);
+      
+      // Calculate hashrate percentage from mempool data
+      const hashratePercent = (pool.blockCount / totalBlocks) * 100;
+      
+      // Normalize name for comparison with our database
+      const poolSlug = pool.slug || pool.name.toLowerCase().replace(/[\s\-\.]/g, '');
+      const normalizedPoolSlug = poolSlug.toLowerCase().replace(/[\s\-\.]/g, '');
+      
+      // Get actual blocks found in our database
+      const blocksFound = blocksByPool[normalizedPoolSlug] || 0;
       
       // Calculate expected blocks based on hashrate percentage
       const expected = (hashratePercent * blocks.length) / 100;
+      
+      // Calculate luck
       const luck = expected > 0 ? (blocksFound / expected) * 100 : 0;
       
-      // Standardize the display name for better recognition
-      const standardizedDisplayName = standardizePoolName(pool.pool_name);
-      
       return {
-        name: pool.pool_slug.toLowerCase(),
-        displayName: standardizedDisplayName,
-        color: getColorForPool(standardizedDisplayName),
+        name: poolSlug.toLowerCase(),
+        displayName: standardizedName,
+        color: getColorForPool(standardizedName),
         hashratePct: hashratePercent,
         expectedBlocks: expected,
         actualBlocks: blocksFound,
-        luck
+        luck: luck
       };
     })
     .filter((pool: any) => pool.hashratePct > 0 || pool.actualBlocks > 0)

@@ -395,10 +395,13 @@ apiRouter.get('/mining-stats/:blockCount', async (req, res) => {
       const expected = (hashratePercent * blocks.length) / 100;
       const luck = expected > 0 ? (blocksFound / expected) * 100 : 0;
       
+      // Standardize the display name for better recognition
+      const standardizedDisplayName = standardizePoolName(pool.pool_name);
+      
       return {
-        name: pool.pool_slug,
-        displayName: pool.pool_name,
-        color: getColorForPool(pool.pool_name),
+        name: pool.pool_slug.toLowerCase(),
+        displayName: standardizedDisplayName,
+        color: getColorForPool(standardizedDisplayName),
         hashratePct: hashratePercent,
         expectedBlocks: expected,
         actualBlocks: blocksFound,

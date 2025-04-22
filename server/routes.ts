@@ -392,10 +392,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Count blocks by mining pool
       const blocksByPool: Record<string, number> = {};
       blocks.forEach(block => {
-        if (!blocksByPool[block.miningPool]) {
-          blocksByPool[block.miningPool] = 0;
+        // Our blocks have poolSlug property, not miningPool
+        const miningPool = pools.find(p => p.name === block.poolSlug || p.name.toLowerCase() === block.poolSlug?.toLowerCase())?.name || 'Unknown';
+        
+        if (!blocksByPool[miningPool]) {
+          blocksByPool[miningPool] = 0;
         }
-        blocksByPool[block.miningPool]++;
+        blocksByPool[miningPool]++;
       });
       
       // Calculate mining pool hashrates based on block proportion

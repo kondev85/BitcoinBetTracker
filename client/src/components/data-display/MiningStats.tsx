@@ -31,9 +31,43 @@ export default function MiningStats({ initialBlockCount = 10 }: MiningStatsProps
     setBlockCount(newCount);
   };
 
-  // Take top 3 pools and combine the rest into "Others"
-  const topPools = miningStats?.slice(0, 3) || [];
-  const otherPools = miningStats?.slice(3) || [];
+  // We want to show specific top 3 pools: Foundry USA, AntPool, ViaBTC
+  const foundryPool = miningStats?.find(pool => pool.name === "Foundry USA") || {
+    name: "Foundry USA",
+    displayName: "Foundry USA",
+    color: "#F7931A",
+    hashratePct: 0,
+    expectedBlocks: 0,
+    actualBlocks: 0,
+    luck: 0
+  };
+  
+  const antPool = miningStats?.find(pool => pool.name === "AntPool") || {
+    name: "AntPool",
+    displayName: "AntPool",
+    color: "#3B82F6",
+    hashratePct: 0,
+    expectedBlocks: 0,
+    actualBlocks: 0,
+    luck: 0
+  };
+  
+  const viabtcPool = miningStats?.find(pool => pool.name === "ViaBTC") || {
+    name: "ViaBTC",
+    displayName: "ViaBTC",
+    color: "#6D28D9",
+    hashratePct: 0,
+    expectedBlocks: 0,
+    actualBlocks: 0,
+    luck: 0
+  };
+  
+  // All other pools will be combined
+  const otherPools = miningStats?.filter(pool => 
+    pool.name !== "Foundry USA" && 
+    pool.name !== "AntPool" && 
+    pool.name !== "ViaBTC"
+  ) || [];
   
   // Calculate stats for "Others" combined
   const othersHashrate = otherPools.reduce((sum, pool) => sum + pool.hashratePct, 0);
@@ -42,7 +76,9 @@ export default function MiningStats({ initialBlockCount = 10 }: MiningStatsProps
   const othersLuck = othersExpected > 0 ? (othersActual / othersExpected) * 100 : 0;
   
   const poolsToDisplay = [
-    ...topPools,
+    foundryPool,
+    antPool,
+    viabtcPool,
     {
       name: "Others",
       displayName: "Others",
@@ -122,7 +158,9 @@ export default function MiningStats({ initialBlockCount = 10 }: MiningStatsProps
               <MiningStatCard
                 key={pool.name}
                 title={pool.displayName}
-                subtitle={index < 3 ? `${index + 1}${getOrdinalSuffix(index + 1)} Mining Pool` : "Other Mining Pools"}
+                subtitle={index < 3 
+                  ? `${index + 1}${getOrdinalSuffix(index + 1)} Mining Pool` 
+                  : "Combined Smaller Pools"}
                 color={pool.color}
                 hashrate={pool.hashratePct}
                 expected={pool.expectedBlocks}

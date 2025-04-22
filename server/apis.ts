@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { repository } from './repository';
+import { db } from './db';
 import { z } from 'zod';
+import { sql } from 'drizzle-orm';
 import axios from 'axios';
 import { getRedisClient } from './redis';
 
@@ -327,44 +329,86 @@ apiRouter.get('/mining-stats/:blockCount', async (req, res) => {
     console.log("API endpoint /api/mining-stats/:blockCount called");
     const blockCount = parseInt(req.params.blockCount);
     console.log(`Fetching stats for ${blockCount} blocks`);
+    
+    // Get the most recent blocks
     const blocks = await repository.getRecentBlocks(blockCount);
     console.log(`Found ${blocks.length} blocks`);
-    const miners = await repository.getAllMiners();
-    console.log(`Found ${miners.length} miners`);
     
     // Count blocks by mining pool
     const blocksByPool: Record<string, number> = {};
     blocks.forEach(block => {
-      // Our blocks have miningPool property 
-      const miningPool = miners.find(p => p.name === block.miningPool)?.name || 'Unknown';
+      // Standardize the pool slug for consistent naming
+      const normalizedPoolSlug = (block.poolSlug || 'unknown').toLowerCase().replace(/[\s\-\.]/g, '');
       
-      if (!blocksByPool[miningPool]) {
-        blocksByPool[miningPool] = 0;
+      if (!blocksByPool[normalizedPoolSlug]) {
+        blocksByPool[normalizedPoolSlug] = 0;
       }
-      blocksByPool[miningPool]++;
+      blocksByPool[normalizedPoolSlug]++;
     });
     
-    // Calculate mining pool hashrates based on block proportion
-    const totalBlocks = blocks.length;
-    const poolStats = miners.map(pool => {
-      const blocksFound = blocksByPool[pool.name] || 0;
-      // Use weekly hashrate for better accuracy in calculating expected blocks
-      const hashratePct = pool.hashrate1w || 0;
-      const expected = (hashratePct * totalBlocks) / 100;
+    console.log('Pool blocks count:', Object.entries(blocksByPool).map(([pool, count]) => `${pool}: ${count}`).join(', '));
+    
+    // Now, use SQL to get hashrate history data directly 
+    const hashrateQuery = `
+      SELECT 
+        pool_slug, 
+        pool_name, 
+        hashrate_24h,
+        hashrate_3d,
+        hashrate_1w
+      FROM 
+        hashrate_history
+      WHERE 
+        pool_slug != 'total'
+    `;
+    
+    const hashrates = await db.execute(sql.raw(hashrateQuery));
+    console.log(`Found ${hashrates.rows.length} mining pool entries in hashrate_history`);
+    
+    // Get total network hashrate
+    const totalHashrateQuery = `
+      SELECT 
+        hashrate_1w 
+      FROM 
+        hashrate_history 
+      WHERE 
+        pool_slug = 'total' 
+      LIMIT 1
+    `;
+    
+    const totalResult = await db.execute(sql.raw(totalHashrateQuery));
+    const totalNetworkHashrate = totalResult.rows.length > 0 ? parseFloat(totalResult.rows[0].hashrate_1w) : 0;
+    console.log(`Total network hashrate: ${totalNetworkHashrate}`);
+    
+    // Calculate pool stats
+    const poolStats = hashrates.rows.map((pool: any) => {
+      // Normalize pool names/slugs for comparison
+      const poolNormalized = pool.pool_slug.toLowerCase().replace(/[\s\-\.]/g, '');
+      
+      const blocksFound = blocksByPool[poolNormalized] || 0;
+      
+      // Calculate weekly hashrate percentage
+      const absoluteHashrate = parseFloat(pool.hashrate_1w) || 0;
+      const hashratePercent = totalNetworkHashrate > 0 ? (absoluteHashrate / totalNetworkHashrate) * 100 : 0;
+      
+      // Calculate expected blocks based on hashrate percentage
+      const expected = (hashratePercent * blocks.length) / 100;
       const luck = expected > 0 ? (blocksFound / expected) * 100 : 0;
       
       return {
-        name: pool.name,
-        displayName: pool.displayName || pool.name,
-        color: pool.color,
-        hashratePct,
+        name: pool.pool_slug,
+        displayName: pool.pool_name,
+        color: getColorForPool(pool.pool_name),
+        hashratePct: hashratePercent,
         expectedBlocks: expected,
         actualBlocks: blocksFound,
         luck
       };
-    }).filter(pool => pool.hashratePct > 0 || pool.actualBlocks > 0)
-      .sort((a, b) => b.hashratePct - a.hashratePct);
+    })
+    .filter((pool: any) => pool.hashratePct > 0 || pool.actualBlocks > 0)
+    .sort((a: any, b: any) => b.hashratePct - a.hashratePct);
     
+    console.log(`Returning stats for ${poolStats.length} mining pools`);
     res.json(poolStats);
   } catch (error) {
     console.error('Error calculating mining stats:', error);

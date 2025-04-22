@@ -402,8 +402,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalBlocks = blocks.length;
       const poolStats = pools.map(pool => {
         const blocksFound = blocksByPool[pool.name] || 0;
-        const hashratePct = (blocksFound / totalBlocks) * 100;
-        const expected = (pool.hashrate24h || 0) * totalBlocks / 100;
+        // Use weekly hashrate for better accuracy in calculating expected blocks
+        const hashratePct = pool.hashrate1w || 0;
+        const expected = (hashratePct * totalBlocks) / 100;
         const luck = expected > 0 ? (blocksFound / expected) * 100 : 0;
         
         return {
@@ -415,7 +416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           actualBlocks: blocksFound,
           luck
         };
-      }).filter(pool => pool.hashratePct > 0 || pool.hashrate24h > 0)
+      }).filter(pool => pool.hashratePct > 0 || pool.actualBlocks > 0)
         .sort((a, b) => b.hashratePct - a.hashratePct);
       
       res.json(poolStats);

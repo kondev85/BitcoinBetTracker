@@ -385,9 +385,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mining stats calculation
   app.get("/api/mining-stats/:blockCount", async (req, res) => {
     try {
+      console.log("API endpoint /api/mining-stats/:blockCount called");
       const blockCount = parseInt(req.params.blockCount);
+      console.log(`Fetching stats for ${blockCount} blocks`);
       const blocks = await storage.getRecentBlocks(blockCount);
+      console.log(`Found ${blocks.length} blocks`);
       const pools = await storage.getAllMiningPools();
+      console.log(`Found ${pools.length} mining pools`);
+      console.log(`Sample block:`, blocks[0] ? JSON.stringify(blocks[0]) : "None");
+      console.log(`Sample pool:`, pools[0] ? JSON.stringify(pools[0]) : "None");
       
       // Count blocks by mining pool
       const blocksByPool: Record<string, number> = {};

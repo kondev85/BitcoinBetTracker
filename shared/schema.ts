@@ -40,6 +40,26 @@ export const blockMinerOdds = pgTable("block_miner_odds", {
   createdAt: timestamp("created_at").defaultNow(), // When this betting option was created
 });
 
+// Time-based bets (for betting on block time)
+export const timeBets = pgTable("time_bets", {
+  id: serial("id").primaryKey(),
+  blockNumber: integer("block_number").notNull(),
+  underMinutesOdds: real("under_minutes_odds").notNull().default(2.0), // Odds for under time threshold
+  overMinutesOdds: real("over_minutes_odds").notNull().default(2.0), // Odds for over time threshold
+  createdAt: timestamp("created_at").defaultNow(), // When this betting option was created
+});
+
+// Payment addresses for cryptocurrency payments
+export const paymentAddresses = pgTable("payment_addresses", {
+  id: serial("id").primaryKey(),
+  betId: integer("bet_id").notNull(),
+  betType: text("bet_type").notNull(), // 'miner' or 'time'
+  outcome: text("outcome").notNull(), // 'hit', 'no_hit', 'under', or 'over'
+  currency: text("currency").notNull(), // 'BTC', 'ETH', 'USDC', 'LIGHTNING', 'LITECOIN', etc.
+  address: text("address").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Bets placed by users
 export const bets = pgTable("bets", {
   id: serial("id").primaryKey(),
@@ -78,7 +98,27 @@ export const insertBlockSchema = createInsertSchema(blocks).pick({
   txCount: true,
 });
 
-export const insertBlockMinerOddsSchema = createInsertSchema(blockMinerOdds);
+export const insertBlockMinerOddsSchema = createInsertSchema(blockMinerOdds).pick({
+  blockNumber: true,
+  minerId: true,
+  poolSlug: true,
+  hitOdds: true,
+  noHitOdds: true
+});
+
+export const insertTimeBetsSchema = createInsertSchema(timeBets).pick({
+  blockNumber: true,
+  underMinutesOdds: true,
+  overMinutesOdds: true
+});
+
+export const insertPaymentAddressSchema = createInsertSchema(paymentAddresses).pick({
+  betId: true,
+  betType: true,
+  outcome: true,
+  currency: true,
+  address: true
+});
 
 export const insertBetSchema = createInsertSchema(bets).pick({
   blockId: true,
@@ -94,8 +134,12 @@ export const insertBetSchema = createInsertSchema(bets).pick({
 export type InsertMiner = z.infer<typeof insertMinerSchema>;
 export type InsertBlock = z.infer<typeof insertBlockSchema>;
 export type InsertBlockMinerOdds = z.infer<typeof insertBlockMinerOddsSchema>;
+export type InsertTimeBets = z.infer<typeof insertTimeBetsSchema>;
+export type InsertPaymentAddress = z.infer<typeof insertPaymentAddressSchema>;
 export type InsertBet = z.infer<typeof insertBetSchema>;
 export type Miner = typeof miners.$inferSelect;
 export type Block = typeof blocks.$inferSelect;
 export type BlockMinerOdds = typeof blockMinerOdds.$inferSelect;
+export type TimeBets = typeof timeBets.$inferSelect;
+export type PaymentAddress = typeof paymentAddresses.$inferSelect;
 export type Bet = typeof bets.$inferSelect;

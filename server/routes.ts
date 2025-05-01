@@ -6,11 +6,9 @@ import path from "path";
 import { parse } from "csv-parse/sync";
 import {
   insertBlockSchema,
-  insertBettingOptionSchema,
-  insertMiningPoolSchema,
-  insertNetworkHashrateSchema,
-  insertPublishedBlockSchema,
-  insertReserveAddressSchema
+  insertBlockMinerOddsSchema,
+  insertTimeBetsSchema,
+  insertPaymentAddressSchema,
 } from "@shared/schema";
 import { z } from "zod";
 import { getRedisClient } from "./redis";
@@ -56,7 +54,7 @@ async function initializeData() {
 }
 
 // Get mining pools data from mempool.space and cache it in Redis
-async function fetchAndCacheMiningPools(period: string = '1w'): Promise<any[]> {
+async function fetchAndCacheMiningPools(period: string = '1w'): Promise<any> {
   try {
     // Get Redis client if available
     const redisClient = getRedisClient();
@@ -329,36 +327,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/betting-options", async (req, res) => {
+  // Block miner odds (mining pool-specific betting)
+  app.post("/api/admin/block-miner-odds", async (req, res) => {
     try {
-      const optionData = insertBettingOptionSchema.parse(req.body);
-      const newOption = await storage.createBettingOption(optionData);
-      res.status(201).json(newOption);
+      const oddsData = insertBlockMinerOddsSchema.parse(req.body);
+      const newOdds = await storage.createBlockMinerOdds(oddsData);
+      res.status(201).json(newOdds);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      res.status(500).json({ error: "Failed to create betting option" });
+      res.status(500).json({ error: "Failed to create block miner odds" });
     }
   });
 
-  app.put("/api/admin/betting-options/:id", async (req, res) => {
+  app.get("/api/admin/block-miner-odds/:blockNumber", async (req, res) => {
+    try {
+      const blockNumber = parseInt(req.params.blockNumber);
+      const odds = await storage.getBlockMinerOddsByBlockNumber(blockNumber);
+      res.json(odds);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch block miner odds" });
+    }
+  });
+
+  app.put("/api/admin/block-miner-odds/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const optionData = req.body;
+      const oddsData = req.body;
       
-      const updatedOption = await storage.updateBettingOption(id, optionData);
+      const updatedOdds = await storage.updateBlockMinerOdds(id, oddsData);
       
-      if (!updatedOption) {
-        return res.status(404).json({ error: "Betting option not found" });
+      if (!updatedOdds) {
+        return res.status(404).json({ error: "Block miner odds not found" });
       }
       
-      res.json(updatedOption);
+      res.json(updatedOdds);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      res.status(500).json({ error: "Failed to update betting option" });
+      res.status(500).json({ error: "Failed to update block miner odds" });
+    }
+  });
+
+  // Time-based bets
+  app.post("/api/admin/time-bets", async (req, res) => {
+    try {
+      const betData = insertTimeBetsSchema.parse(req.body);
+      const newBet = await storage.createTimeBet(betData);
+      res.status(201).json(newBet);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create time bet" });
+    }
+  });
+
+  app.get("/api/admin/time-bets/:blockNumber", async (req, res) => {
+    try {
+      const blockNumber = parseInt(req.params.blockNumber);
+      const bets = await storage.getTimeBetByBlockNumber(blockNumber);
+      
+      if (!bets) {
+        return res.status(404).json({ error: "Time bet not found for this block" });
+      }
+      
+      res.json(bets);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch time bets" });
+    }
+  });
+
+  app.put("/api/admin/time-bets/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const betData = req.body;
+      
+      const updatedBet = await storage.updateTimeBet(id, betData);
+      
+      if (!updatedBet) {
+        return res.status(404).json({ error: "Time bet not found" });
+      }
+      
+      res.json(updatedBet);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update time bet" });
+    }
+  });
+
+  // Payment addresses
+  app.post("/api/admin/payment-addresses", async (req, res) => {
+    try {
+      const addressData = insertPaymentAddressSchema.parse(req.body);
+      const newAddress = await storage.createPaymentAddress(addressData);
+      res.status(201).json(newAddress);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create payment address" });
+    }
+  });
+
+  app.get("/api/admin/payment-addresses/:betId/:betType", async (req, res) => {
+    try {
+      const betId = parseInt(req.params.betId);
+      const betType = req.params.betType;
+      const addresses = await storage.getPaymentAddressesForBet(betId, betType);
+      res.json(addresses);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch payment addresses" });
+    }
+  });
+
+  app.put("/api/admin/payment-addresses/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const addressData = req.body;
+      
+      const updatedAddress = await storage.updatePaymentAddress(id, addressData);
+      
+      if (!updatedAddress) {
+        return res.status(404).json({ error: "Payment address not found" });
+      }
+      
+      res.json(updatedAddress);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update payment address" });
     }
   });
 

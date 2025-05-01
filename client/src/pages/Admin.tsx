@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import { fetchBlocks, fetchMiners } from '@/lib/api-client';
-import { Block, TimeBets, BlockMinerOdds } from '@/shared/schema';
+// Using relative path to access schema types
+import { Block, TimeBets, BlockMinerOdds } from '../../shared/schema';
 import { 
   Card, 
   CardContent, 

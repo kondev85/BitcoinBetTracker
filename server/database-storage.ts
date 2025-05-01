@@ -1,12 +1,15 @@
 import { db } from './db';
-import { eq, desc, asc } from 'drizzle-orm';
+import { eq, desc, asc, and } from 'drizzle-orm';
 import { 
   users, blocks, miningPools, networkHashrate, 
   publishedBlocks, bettingOptions, reserveAddresses,
+  blockMinerOdds, timeBets, paymentAddresses,
   type User, type InsertUser, type Block, type InsertBlock,
   type MiningPool, type InsertMiningPool, type NetworkHashrate, type InsertNetworkHashrate,
   type PublishedBlock, type InsertPublishedBlock, type BettingOption, type InsertBettingOption,
-  type ReserveAddress, type InsertReserveAddress
+  type ReserveAddress, type InsertReserveAddress,
+  type BlockMinerOdds, type InsertBlockMinerOdds, type TimeBets, type InsertTimeBets,
+  type PaymentAddress, type InsertPaymentAddress
 } from '@shared/schema';
 import { IStorage } from './storage';
 
@@ -183,6 +186,117 @@ export class DatabaseStorage implements IStorage {
       .update(reserveAddresses)
       .set(address)
       .where(eq(reserveAddresses.currency, currency))
+      .returning();
+      
+    return updatedAddress;
+  }
+
+  // Block Miner Odds operations
+  async getAllBlockMinerOdds(): Promise<BlockMinerOdds[]> {
+    return await db.select().from(blockMinerOdds);
+  }
+
+  async getBlockMinerOddsByBlockNumber(blockNumber: number): Promise<BlockMinerOdds[]> {
+    return await db.select().from(blockMinerOdds).where(eq(blockMinerOdds.blockNumber, blockNumber));
+  }
+
+  async getBlockMinerOddsById(id: number): Promise<BlockMinerOdds | undefined> {
+    const [odds] = await db.select().from(blockMinerOdds).where(eq(blockMinerOdds.id, id));
+    return odds;
+  }
+
+  async createBlockMinerOdds(odds: InsertBlockMinerOdds): Promise<BlockMinerOdds> {
+    const [newOdds] = await db.insert(blockMinerOdds).values(odds).returning();
+    return newOdds;
+  }
+
+  async updateBlockMinerOdds(id: number, odds: Partial<InsertBlockMinerOdds>): Promise<BlockMinerOdds | undefined> {
+    const [existingOdds] = await db.select().from(blockMinerOdds).where(eq(blockMinerOdds.id, id));
+    
+    if (!existingOdds) {
+      return undefined;
+    }
+    
+    const [updatedOdds] = await db
+      .update(blockMinerOdds)
+      .set(odds)
+      .where(eq(blockMinerOdds.id, id))
+      .returning();
+      
+    return updatedOdds;
+  }
+
+  // Time Bets operations
+  async getAllTimeBets(): Promise<TimeBets[]> {
+    return await db.select().from(timeBets);
+  }
+
+  async getTimeBetByBlockNumber(blockNumber: number): Promise<TimeBets | undefined> {
+    const [bet] = await db.select().from(timeBets).where(eq(timeBets.blockNumber, blockNumber));
+    return bet;
+  }
+
+  async getTimeBetById(id: number): Promise<TimeBets | undefined> {
+    const [bet] = await db.select().from(timeBets).where(eq(timeBets.id, id));
+    return bet;
+  }
+
+  async createTimeBet(bet: InsertTimeBets): Promise<TimeBets> {
+    const [newBet] = await db.insert(timeBets).values(bet).returning();
+    return newBet;
+  }
+
+  async updateTimeBet(id: number, bet: Partial<InsertTimeBets>): Promise<TimeBets | undefined> {
+    const [existingBet] = await db.select().from(timeBets).where(eq(timeBets.id, id));
+    
+    if (!existingBet) {
+      return undefined;
+    }
+    
+    const [updatedBet] = await db
+      .update(timeBets)
+      .set(bet)
+      .where(eq(timeBets.id, id))
+      .returning();
+      
+    return updatedBet;
+  }
+
+  // Payment Addresses operations
+  async getAllPaymentAddresses(): Promise<PaymentAddress[]> {
+    return await db.select().from(paymentAddresses);
+  }
+
+  async getPaymentAddressById(id: number): Promise<PaymentAddress | undefined> {
+    const [address] = await db.select().from(paymentAddresses).where(eq(paymentAddresses.id, id));
+    return address;
+  }
+
+  async getPaymentAddressesForBet(betId: number, betType: string): Promise<PaymentAddress[]> {
+    return await db.select()
+      .from(paymentAddresses)
+      .where(and(
+        eq(paymentAddresses.betId, betId),
+        eq(paymentAddresses.betType, betType)
+      ));
+  }
+
+  async createPaymentAddress(address: InsertPaymentAddress): Promise<PaymentAddress> {
+    const [newAddress] = await db.insert(paymentAddresses).values(address).returning();
+    return newAddress;
+  }
+
+  async updatePaymentAddress(id: number, address: Partial<InsertPaymentAddress>): Promise<PaymentAddress | undefined> {
+    const [existingAddress] = await db.select().from(paymentAddresses).where(eq(paymentAddresses.id, id));
+    
+    if (!existingAddress) {
+      return undefined;
+    }
+    
+    const [updatedAddress] = await db
+      .update(paymentAddresses)
+      .set(address)
+      .where(eq(paymentAddresses.id, id))
       .returning();
       
     return updatedAddress;

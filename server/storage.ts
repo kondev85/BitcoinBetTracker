@@ -5,7 +5,10 @@ import {
   networkHashrate, type NetworkHashrate, type InsertNetworkHashrate,
   publishedBlocks, type PublishedBlock, type InsertPublishedBlock,
   bettingOptions, type BettingOption, type InsertBettingOption,
-  reserveAddresses, type ReserveAddress, type InsertReserveAddress
+  reserveAddresses, type ReserveAddress, type InsertReserveAddress,
+  blockMinerOdds, type BlockMinerOdds, type InsertBlockMinerOdds,
+  timeBets, type TimeBets, type InsertTimeBets,
+  paymentAddresses, type PaymentAddress, type InsertPaymentAddress
 } from "@shared/schema";
 
 // Interface for storage operations
@@ -50,6 +53,27 @@ export interface IStorage {
   getReserveAddressByCurrency(currency: string): Promise<ReserveAddress | undefined>;
   createReserveAddress(address: InsertReserveAddress): Promise<ReserveAddress>;
   updateReserveAddress(currency: string, address: Partial<InsertReserveAddress>): Promise<ReserveAddress | undefined>;
+  
+  // Block Miner Odds operations
+  getAllBlockMinerOdds(): Promise<BlockMinerOdds[]>;
+  getBlockMinerOddsByBlockNumber(blockNumber: number): Promise<BlockMinerOdds[]>;
+  getBlockMinerOddsById(id: number): Promise<BlockMinerOdds | undefined>;
+  createBlockMinerOdds(odds: InsertBlockMinerOdds): Promise<BlockMinerOdds>;
+  updateBlockMinerOdds(id: number, odds: Partial<InsertBlockMinerOdds>): Promise<BlockMinerOdds | undefined>;
+  
+  // Time Bets operations
+  getAllTimeBets(): Promise<TimeBets[]>;
+  getTimeBetByBlockNumber(blockNumber: number): Promise<TimeBets | undefined>;
+  getTimeBetById(id: number): Promise<TimeBets | undefined>;
+  createTimeBet(bet: InsertTimeBets): Promise<TimeBets>;
+  updateTimeBet(id: number, bet: Partial<InsertTimeBets>): Promise<TimeBets | undefined>;
+  
+  // Payment Addresses operations
+  getAllPaymentAddresses(): Promise<PaymentAddress[]>;
+  getPaymentAddressById(id: number): Promise<PaymentAddress | undefined>;
+  getPaymentAddressesForBet(betId: number, betType: string): Promise<PaymentAddress[]>;
+  createPaymentAddress(address: InsertPaymentAddress): Promise<PaymentAddress>;
+  updatePaymentAddress(id: number, address: Partial<InsertPaymentAddress>): Promise<PaymentAddress | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -247,6 +271,69 @@ export class MemStorage implements IStorage {
     const updatedAddress: ReserveAddress = { ...existingAddress, ...address };
     this.reserveAddresses.set(currency, updatedAddress);
     return updatedAddress;
+  }
+
+  // Block Miner Odds operations (stubs)
+  async getAllBlockMinerOdds(): Promise<BlockMinerOdds[]> {
+    return [];
+  }
+
+  async getBlockMinerOddsByBlockNumber(blockNumber: number): Promise<BlockMinerOdds[]> {
+    return [];
+  }
+
+  async getBlockMinerOddsById(id: number): Promise<BlockMinerOdds | undefined> {
+    return undefined;
+  }
+
+  async createBlockMinerOdds(odds: InsertBlockMinerOdds): Promise<BlockMinerOdds> {
+    return { id: 1, ...odds, createdAt: new Date() };
+  }
+
+  async updateBlockMinerOdds(id: number, odds: Partial<InsertBlockMinerOdds>): Promise<BlockMinerOdds | undefined> {
+    return undefined;
+  }
+
+  // Time Bets operations (stubs)
+  async getAllTimeBets(): Promise<TimeBets[]> {
+    return [];
+  }
+
+  async getTimeBetByBlockNumber(blockNumber: number): Promise<TimeBets | undefined> {
+    return undefined;
+  }
+
+  async getTimeBetById(id: number): Promise<TimeBets | undefined> {
+    return undefined;
+  }
+
+  async createTimeBet(bet: InsertTimeBets): Promise<TimeBets> {
+    return { id: 1, ...bet, createdAt: new Date() };
+  }
+
+  async updateTimeBet(id: number, bet: Partial<InsertTimeBets>): Promise<TimeBets | undefined> {
+    return undefined;
+  }
+
+  // Payment Addresses operations (stubs)
+  async getAllPaymentAddresses(): Promise<PaymentAddress[]> {
+    return [];
+  }
+
+  async getPaymentAddressById(id: number): Promise<PaymentAddress | undefined> {
+    return undefined;
+  }
+
+  async getPaymentAddressesForBet(betId: number, betType: string): Promise<PaymentAddress[]> {
+    return [];
+  }
+
+  async createPaymentAddress(address: InsertPaymentAddress): Promise<PaymentAddress> {
+    return { id: 1, ...address, createdAt: new Date() };
+  }
+
+  async updatePaymentAddress(id: number, address: Partial<InsertPaymentAddress>): Promise<PaymentAddress | undefined> {
+    return undefined;
   }
 }
 

@@ -29,42 +29,15 @@ export const blocks = pgTable("blocks", {
   txCount: integer("tx_count"), // Number of transactions
 });
 
-// Block-specific miner odds and addresses
+// Block-specific miner odds (mining pool betting)
 export const blockMinerOdds = pgTable("block_miner_odds", {
   id: serial("id").primaryKey(),
   blockNumber: integer("block_number").notNull(),
-  minerId: integer("miner_id"), // Made nullable for time-based odds
-
-  // Hit odds and addresses
-  hitOdds: real("hit_odds").notNull().default(2.0),
-  hitBtcAddress: text("hit_btc_address"),
-  hitEthAddress: text("hit_eth_address"),
-  hitUsdcAddress: text("hit_usdc_address"),
-  hitLightningAddress: text("hit_lightning_address"),
-  hitLitecoinAddress: text("hit_litecoin_address"),
-
-  // No-hit odds and addresses
-  noHitOdds: real("no_hit_odds").notNull().default(2.0),
-  noHitBtcAddress: text("no_hit_btc_address"),
-  noHitEthAddress: text("no_hit_eth_address"),
-  noHitUsdcAddress: text("no_hit_usdc_address"),
-  noHitLightningAddress: text("no_hit_lightning_address"),
-  noHitLitecoinAddress: text("no_hit_litecoin_address"),
-
-  // Time-based odds and addresses
-  underMinutesOdds: real("under_minutes_odds").notNull().default(2.0),
-  underBtcAddress: text("under_btc_address"),
-  underEthAddress: text("under_eth_address"),
-  underUsdcAddress: text("under_usdc_address"),
-  underLightningAddress: text("under_lightning_address"),
-  underLitecoinAddress: text("under_litecoin_address"),
-
-  overMinutesOdds: real("over_minutes_odds").notNull().default(2.0),
-  overBtcAddress: text("over_btc_address"),
-  overEthAddress: text("over_eth_address"),
-  overUsdcAddress: text("over_usdc_address"),
-  overLightningAddress: text("over_lightning_address"),
-  overLitecoinAddress: text("over_litecoin_address"),
+  minerId: integer("miner_id"), // Legacy field, kept for backward compatibility
+  poolSlug: text("pool_slug").notNull(), // Mining pool identifier (e.g., "foundryusa", "antpool")
+  hitOdds: real("hit_odds").notNull().default(2.0), // Odds for betting this pool will find the block
+  noHitOdds: real("no_hit_odds").notNull().default(2.0), // Odds for betting this pool will NOT find the block
+  createdAt: timestamp("created_at").defaultNow(), // When this betting option was created
 });
 
 // Bets placed by users

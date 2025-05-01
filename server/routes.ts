@@ -40,9 +40,9 @@ async function initializeData() {
       const publishedBlocks = await storage.getAllPublishedBlocks();
       console.log(`Found ${publishedBlocks.length} published blocks in the database.`);
       
-      // Check betting options
-      const bettingOptions = await storage.getAllBettingOptions();
-      console.log(`Found ${bettingOptions.length} betting options in the database.`);
+      // Check block miner odds
+      const blockMinerOdds = await storage.getAllBlockMinerOdds();
+      console.log(`Found ${blockMinerOdds.length} block miner odds in the database.`);
       
       // Check reserve addresses
       const reserveAddresses = await storage.getAllReserveAddresses();
@@ -259,8 +259,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const blockHeight = req.query.blockHeight ? parseInt(req.query.blockHeight as string) : undefined;
       
       const options = blockHeight
-        ? await storage.getBettingOptionsForBlock(blockHeight)
-        : await storage.getAllBettingOptions();
+        ? await storage.getBlockMinerOddsByBlockNumber(blockHeight)
+        : await storage.getAllBlockMinerOdds();
       
       res.json(options);
     } catch (error) {
@@ -277,18 +277,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get payment addresses for a specific bet
-  app.get("/api/payment-addresses/:betId/:betType", async (req, res) => {
+  // Get payment addresses for a specific block, bet type, and outcome
+  app.get("/api/payment-addresses/:blockNumber/:betType/:outcome", async (req, res) => {
     try {
-      const betId = parseInt(req.params.betId);
+      const blockNumber = parseInt(req.params.blockNumber);
       const betType = req.params.betType;
+      const outcome = req.params.outcome;
       
       // Validate betType
       if (!['miner', 'time'].includes(betType)) {
         return res.status(400).json({ error: "Invalid bet type. Allowed values: miner, time" });
       }
       
-      const addresses = await storage.getPaymentAddressesForBet(betId, betType);
+      // Validate outcome based on betType
+      if (betType === 'miner' && !['hit', 'noHit'].includes(outcome)) {
+        return res.status(400).json({ error: "Invalid outcome for miner bet type. Allowed values: hit, noHit" });
+      }
+      
+      if (betType === 'time' && !['under', 'over'].includes(outcome)) {
+        return res.status(400).json({ error: "Invalid outcome for time bet type. Allowed values: under, over" });
+      }
+      
+      const addresses = await storage.getPaymentAddressesByBlockNumber(blockNumber, betType, outcome);
       res.json(addresses);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch payment addresses" });
@@ -459,11 +469,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/payment-addresses/:betId/:betType", async (req, res) => {
+  app.get("/api/admin/payment-addresses/:blockNumber/:betType/:outcome", async (req, res) => {
     try {
-      const betId = parseInt(req.params.betId);
+      const blockNumber = parseInt(req.params.blockNumber);
       const betType = req.params.betType;
-      const addresses = await storage.getPaymentAddressesForBet(betId, betType);
+      const outcome = req.params.outcome;
+      
+      // Validate betType
+      if (!['miner', 'time'].includes(betType)) {
+        return res.status(400).json({ error: "Invalid bet type. Allowed values: miner, time" });
+      }
+      
+      // Validate outcome based on betType
+      if (betType === 'miner' && !['hit', 'noHit'].includes(outcome)) {
+        return res.status(400).json({ error: "Invalid outcome for miner bet type. Allowed values: hit, noHit" });
+      }
+      
+      if (betType === 'time' && !['under', 'over'].includes(outcome)) {
+        return res.status(400).json({ error: "Invalid outcome for time bet type. Allowed values: under, over" });
+      }
+      
+      const addresses = await storage.getPaymentAddressesByBlockNumber(blockNumber, betType, outcome);
       res.json(addresses);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch payment addresses" });
@@ -510,41 +536,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Betting options endpoints
-  app.post("/api/betting-options", async (req, res) => {
+  // Block Miner Odds endpoints
+  app.post("/api/block-miner-odds", async (req, res) => {
     try {
-      const optionData = req.body;
+      const oddsData = req.body;
       
       // Add validation for required fields
-      if (!optionData.blockNumber) {
-        return res.status(400).json({ error: "Missing required field: blockNumber" });
+      if (!oddsData.blockNumber || !oddsData.poolSlug) {
+        return res.status(400).json({ error: "Missing required fields: blockNumber and poolSlug" });
       }
       
-      // Create betting option
-      const newOption = await storage.createBlockMinerOdds(optionData);
-      res.status(201).json(newOption);
+      // Create block miner odds
+      const newOdds = await storage.createBlockMinerOdds(oddsData);
+      res.status(201).json(newOdds);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      console.error('Error creating betting option:', error);
-      res.status(500).json({ error: "Failed to create betting option" });
+      console.error('Error creating block miner odds:', error);
+      res.status(500).json({ error: "Failed to create block miner odds" });
     }
   });
   
-  // Get all betting options or options for a specific block
+  // Get all block miner odds or odds for a specific block
+  app.get("/api/block-miner-odds", async (req, res) => {
+    try {
+      const blockNumber = req.query.blockNumber ? parseInt(req.query.blockNumber as string) : undefined;
+      
+      let odds;
+      if (blockNumber) {
+        odds = await storage.getBlockMinerOddsByBlockNumber(blockNumber);
+      } else {
+        odds = await storage.getAllBlockMinerOdds();
+      }
+      
+      res.json(odds);
+    } catch (error) {
+      console.error('Error fetching block miner odds:', error);
+      res.status(500).json({ error: "Failed to fetch block miner odds" });
+    }
+  });
+  
+  // For backward compatibility - redirect betting options to block miner odds
   app.get("/api/betting-options", async (req, res) => {
     try {
       const blockNumber = req.query.blockNumber ? parseInt(req.query.blockNumber as string) : undefined;
       
-      let options;
+      let odds;
       if (blockNumber) {
-        options = await storage.getBlockMinerOddsByBlockNumber(blockNumber);
+        odds = await storage.getBlockMinerOddsByBlockNumber(blockNumber);
       } else {
-        options = await storage.getAllBlockMinerOdds();
+        odds = await storage.getAllBlockMinerOdds();
       }
       
-      res.json(options);
+      res.json(odds);
     } catch (error) {
       console.error('Error fetching betting options:', error);
       res.status(500).json({ error: "Failed to fetch betting options" });

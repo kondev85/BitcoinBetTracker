@@ -325,12 +325,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes
   app.post("/api/admin/published-blocks", async (req, res) => {
     try {
-      const blockData = insertPublishedBlockSchema.parse(req.body);
-      const existingBlock = await storage.getPublishedBlockByHeight(blockData.height);
+      const { height, estimatedTime, timeThreshold, isActive } = req.body;
+      
+      if (!height || !estimatedTime) {
+        return res.status(400).json({ error: "Missing required fields: height and estimatedTime" });
+      }
+      
+      const existingBlock = await storage.getPublishedBlockByHeight(parseInt(height));
       
       if (existingBlock) {
         return res.status(400).json({ error: "Block with this height already exists" });
       }
+      
+      const blockData = {
+        height: parseInt(height),
+        estimatedTime: new Date(estimatedTime),
+        timeThreshold: timeThreshold || 10,
+        isActive: isActive !== undefined ? isActive : true
+      };
       
       const newBlock = await storage.createPublishedBlock(blockData);
       res.status(201).json(newBlock);

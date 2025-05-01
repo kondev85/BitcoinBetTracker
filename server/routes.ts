@@ -510,56 +510,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // User betting endpoints
-  app.post("/api/bets", async (req, res) => {
+  // Betting options endpoints
+  app.post("/api/betting-options", async (req, res) => {
     try {
-      const betData = req.body;
+      const optionData = req.body;
       
       // Add validation for required fields
-      if (!betData.blockId || !betData.amount || !betData.odds) {
-        return res.status(400).json({ error: "Missing required fields: blockId, amount, odds" });
+      if (!optionData.blockNumber) {
+        return res.status(400).json({ error: "Missing required field: blockNumber" });
       }
       
-      // If it's a miner bet, minerId is required
-      if (!betData.isTimeBet && !betData.minerId) {
-        return res.status(400).json({ error: "Miner bets require minerId" });
-      }
-      
-      // Set current timestamp
-      betData.timestamp = new Date();
-      
-      // Set initial status to pending
-      betData.status = "pending";
-      
-      const newBet = await storage.createBet(betData);
-      res.status(201).json(newBet);
+      // Create betting option
+      const newOption = await storage.createBlockMinerOdds(optionData);
+      res.status(201).json(newOption);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      console.error('Error creating bet:', error);
-      res.status(500).json({ error: "Failed to create bet" });
+      console.error('Error creating betting option:', error);
+      res.status(500).json({ error: "Failed to create betting option" });
     }
   });
   
-  // Get all bets or bets for a specific block
-  app.get("/api/bets", async (req, res) => {
+  // Get all betting options or options for a specific block
+  app.get("/api/betting-options", async (req, res) => {
     try {
-      const blockId = req.query.blockId ? parseInt(req.query.blockId as string) : undefined;
+      const blockNumber = req.query.blockNumber ? parseInt(req.query.blockNumber as string) : undefined;
       
-      let bets;
-      if (blockId) {
-        // Get bets for a specific block
-        bets = await storage.getBetsByBlockId(blockId);
+      let options;
+      if (blockNumber) {
+        options = await storage.getBlockMinerOddsByBlockNumber(blockNumber);
       } else {
-        // Get all bets
-        bets = await storage.getAllBets();
+        options = await storage.getAllBlockMinerOdds();
       }
       
-      res.json(bets);
+      res.json(options);
     } catch (error) {
-      console.error('Error fetching bets:', error);
-      res.status(500).json({ error: "Failed to fetch bets" });
+      console.error('Error fetching betting options:', error);
+      res.status(500).json({ error: "Failed to fetch betting options" });
+    }
+  });
+  
+  // Reserve addresses endpoints
+  app.post("/api/reserve-addresses", async (req, res) => {
+    try {
+      const addressData = req.body;
+      
+      // Add validation for required fields
+      if (!addressData.currency || !addressData.address) {
+        return res.status(400).json({ error: "Missing required fields: currency and address" });
+      }
+      
+      // Create or update reserve address
+      const existingAddress = await storage.getReserveAddressByCurrency(addressData.currency);
+      
+      let result;
+      if (existingAddress) {
+        // Update existing address
+        result = await storage.updateReserveAddress(addressData.currency, addressData);
+      } else {
+        // Create new address
+        result = await storage.createReserveAddress(addressData);
+      }
+      
+      res.status(201).json(result);
+    } catch (error) {
+      console.error('Error managing reserve address:', error);
+      res.status(500).json({ error: "Failed to create/update reserve address" });
+    }
+  });
+  
+  // Get all reserve addresses
+  app.get("/api/reserve-addresses", async (req, res) => {
+    try {
+      const addresses = await storage.getAllReserveAddresses();
+      res.json(addresses);
+    } catch (error) {
+      console.error('Error fetching reserve addresses:', error);
+      res.status(500).json({ error: "Failed to fetch reserve addresses" });
+    }
+  });
+  
+  // Published blocks endpoints - blocks that are available for betting
+  app.post("/api/published-blocks", async (req, res) => {
+    try {
+      const blockData = req.body;
+      
+      // Add validation for required fields
+      if (!blockData.height) {
+        return res.status(400).json({ error: "Missing required field: height" });
+      }
+      
+      // Create published block
+      const newBlock = await storage.createPublishedBlock(blockData);
+      res.status(201).json(newBlock);
+    } catch (error) {
+      console.error('Error creating published block:', error);
+      res.status(500).json({ error: "Failed to create published block" });
+    }
+  });
+  
+  // Get all published blocks or specific published block
+  app.get("/api/published-blocks", async (req, res) => {
+    try {
+      const height = req.query.height ? parseInt(req.query.height as string) : undefined;
+      const activeOnly = req.query.activeOnly === 'true';
+      
+      let blocks;
+      if (height) {
+        // Get a specific published block
+        blocks = await storage.getPublishedBlockByHeight(height);
+      } else if (activeOnly) {
+        // Get active published blocks (available for betting)
+        blocks = await storage.getActivePublishedBlocks();
+      } else {
+        // Get all published blocks
+        blocks = await storage.getAllPublishedBlocks();
+      }
+      
+      res.json(blocks);
+    } catch (error) {
+      console.error('Error fetching published blocks:', error);
+      res.status(500).json({ error: "Failed to fetch published blocks" });
+    }
+  });
+  
+  // Update a published block
+  app.patch("/api/published-blocks/:height", async (req, res) => {
+    try {
+      const height = parseInt(req.params.height);
+      const updateData = req.body;
+      
+      // Update published block
+      const updatedBlock = await storage.updatePublishedBlock(height, updateData);
+      
+      if (!updatedBlock) {
+        return res.status(404).json({ error: "Published block not found" });
+      }
+      
+      res.json(updatedBlock);
+    } catch (error) {
+      console.error('Error updating published block:', error);
+      res.status(500).json({ error: "Failed to update published block" });
     }
   });
 

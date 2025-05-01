@@ -123,29 +123,47 @@ export class MemStorage implements IStorage {
   
   async createMiner(miner: InsertMiner): Promise<Miner> {
     const id = this.currentMinerId++;
-    const newMiner: Miner = { ...miner, id };
+    const newMiner: Miner = { 
+      ...miner, 
+      id,
+      absoluteHashrate: miner.absoluteHashrate || null,
+      averageHashrate: miner.averageHashrate || null,
+      lastHashrateUpdate: miner.lastHashrateUpdate || null,
+      networkHashrate: miner.networkHashrate || null
+    };
     this.miners.set(id, newMiner);
     return newMiner;
   }
 
   // Block operations
   async getAllBlocks(): Promise<Block[]> {
-    return Array.from(this.blocks.values()).sort((a, b) => b.height - a.height);
+    return Array.from(this.blocks.values()).sort((a, b) => b.number - a.number);
   }
   
   async getBlockByHeight(height: number): Promise<Block | undefined> {
-    return Array.from(this.blocks.values()).find(block => block.height === height);
+    return Array.from(this.blocks.values()).find(block => block.number === height);
   }
   
   async getRecentBlocks(limit: number): Promise<Block[]> {
     return Array.from(this.blocks.values())
-      .sort((a, b) => b.height - a.height)
+      .sort((a, b) => b.number - a.number)
       .slice(0, limit);
   }
   
   async createBlock(block: InsertBlock): Promise<Block> {
     const id = this.currentBlockId++;
-    const newBlock: Block = { ...block, id };
+    const newBlock: Block = { 
+      ...block, 
+      id,
+      poolSlug: block.poolSlug || null,
+      isPublished: block.isPublished || false,
+      foundInMinutes: block.foundInMinutes || null,
+      totalOutputAmount: block.totalOutputAmount || null,
+      totalInputAmount: block.totalInputAmount || null,
+      fees: block.fees || null,
+      size: block.size || null,
+      txCount: block.txCount || null
+    };
     this.blocks.set(id, newBlock);
     return newBlock;
   }
@@ -165,7 +183,14 @@ export class MemStorage implements IStorage {
   
   async createMiningPool(pool: InsertMiningPool): Promise<MiningPool> {
     const id = this.currentMiningPoolId++;
-    const newPool: MiningPool = { ...pool, id };
+    const newPool: MiningPool = { 
+      ...pool, 
+      id,
+      hashrate24h: pool.hashrate24h || 0,
+      hashrate3d: pool.hashrate3d || 0,
+      hashrate1w: pool.hashrate1w || 0,
+      updatedAt: new Date()
+    };
     this.miningPools.set(pool.name, newPool);
     return newPool;
   }
@@ -174,7 +199,7 @@ export class MemStorage implements IStorage {
     const existingPool = this.miningPools.get(name);
     if (!existingPool) return undefined;
     
-    const updatedPool: MiningPool = { ...existingPool, ...pool };
+    const updatedPool: MiningPool = { ...existingPool, ...pool, updatedAt: new Date() };
     this.miningPools.set(name, updatedPool);
     return updatedPool;
   }
@@ -186,7 +211,11 @@ export class MemStorage implements IStorage {
   
   async createNetworkHashrate(hashrate: InsertNetworkHashrate): Promise<NetworkHashrate> {
     const id = this.currentNetworkHashrateId++;
-    const newHashrate: NetworkHashrate = { ...hashrate, id };
+    const newHashrate: NetworkHashrate = { 
+      ...hashrate, 
+      id,
+      updatedAt: new Date()
+    };
     this.networkHashrates.set(`${hashrate.period}-${id}`, newHashrate);
     return newHashrate;
   }
@@ -208,7 +237,13 @@ export class MemStorage implements IStorage {
   
   async createPublishedBlock(block: InsertPublishedBlock): Promise<PublishedBlock> {
     const id = this.currentPublishedBlockId++;
-    const newBlock: PublishedBlock = { ...block, id };
+    const newBlock: PublishedBlock = { 
+      ...block, 
+      id,
+      timeThreshold: block.timeThreshold || 10,
+      isActive: block.isActive !== undefined ? block.isActive : true,
+      createdAt: new Date()
+    };
     this.publishedBlocks.set(block.height, newBlock);
     return newBlock;
   }
@@ -269,7 +304,12 @@ export class MemStorage implements IStorage {
   
   async createReserveAddress(address: InsertReserveAddress): Promise<ReserveAddress> {
     const id = this.currentReserveAddressId++;
-    const newAddress: ReserveAddress = { ...address, id };
+    const newAddress: ReserveAddress = { 
+      ...address, 
+      id,
+      memo: address.memo || null,
+      createdAt: new Date()
+    };
     this.reserveAddresses.set(address.currency, newAddress);
     return newAddress;
   }

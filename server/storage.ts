@@ -1,29 +1,28 @@
 import {
-  users, type User, type InsertUser,
   blocks, type Block, type InsertBlock,
+  blockMinerOdds, type BlockMinerOdds, type InsertBlockMinerOdds,
+  timeBets, type TimeBets, type InsertTimeBets,
+  paymentAddresses, type PaymentAddress, type InsertPaymentAddress,
+  miners, type Miner, type InsertMiner,
   miningPools, type MiningPool, type InsertMiningPool,
   networkHashrate, type NetworkHashrate, type InsertNetworkHashrate,
   publishedBlocks, type PublishedBlock, type InsertPublishedBlock,
-  bettingOptions, type BettingOption, type InsertBettingOption,
-  reserveAddresses, type ReserveAddress, type InsertReserveAddress,
-  blockMinerOdds, type BlockMinerOdds, type InsertBlockMinerOdds,
-  timeBets, type TimeBets, type InsertTimeBets,
-  paymentAddresses, type PaymentAddress, type InsertPaymentAddress
+  reserveAddresses, type ReserveAddress, type InsertReserveAddress
 } from "@shared/schema";
 
 // Interface for storage operations
 export interface IStorage {
-  // User operations
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  
   // Block operations
   getAllBlocks(): Promise<Block[]>;
   getBlockByHeight(height: number): Promise<Block | undefined>;
   getRecentBlocks(limit: number): Promise<Block[]>;
   createBlock(block: InsertBlock): Promise<Block>;
   createManyBlocks(blocks: InsertBlock[]): Promise<Block[]>;
+  
+  // Miner operations
+  getAllMiners(): Promise<Miner[]>;
+  getMinerById(id: number): Promise<Miner | undefined>;
+  createMiner(miner: InsertMiner): Promise<Miner>;
   
   // Mining Pool operations
   getAllMiningPools(): Promise<MiningPool[]>;
@@ -41,12 +40,6 @@ export interface IStorage {
   getPublishedBlockByHeight(height: number): Promise<PublishedBlock | undefined>;
   createPublishedBlock(block: InsertPublishedBlock): Promise<PublishedBlock>;
   updatePublishedBlock(height: number, block: Partial<InsertPublishedBlock>): Promise<PublishedBlock | undefined>;
-  
-  // Betting Option operations
-  getAllBettingOptions(): Promise<BettingOption[]>;
-  getBettingOptionsForBlock(height: number): Promise<BettingOption[]>;
-  createBettingOption(option: InsertBettingOption): Promise<BettingOption>;
-  updateBettingOption(id: number, option: Partial<InsertBettingOption>): Promise<BettingOption | undefined>;
   
   // Reserve Address operations
   getAllReserveAddresses(): Promise<ReserveAddress[]>;
@@ -71,73 +64,68 @@ export interface IStorage {
   // Payment Addresses operations
   getAllPaymentAddresses(): Promise<PaymentAddress[]>;
   getPaymentAddressById(id: number): Promise<PaymentAddress | undefined>;
-  getPaymentAddressesForBet(betId: number, betType: string): Promise<PaymentAddress[]>;
+  getPaymentAddressesByBlockNumber(blockNumber: number, betType: string, outcome: string): Promise<PaymentAddress[]>;
   createPaymentAddress(address: InsertPaymentAddress): Promise<PaymentAddress>;
   updatePaymentAddress(id: number, address: Partial<InsertPaymentAddress>): Promise<PaymentAddress | undefined>;
-  
-  // Bet operations
-  getAllBets(): Promise<Bet[]>;
-  getBetById(id: number): Promise<Bet | undefined>;
-  getBetsByBlockId(blockId: number): Promise<Bet[]>;
-  createBet(bet: InsertBet): Promise<Bet>;
-  updateBet(id: number, bet: Partial<InsertBet>): Promise<Bet | undefined>;
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<number, User>;
   private blocks: Map<number, Block>;
+  private miners: Map<number, Miner>;
   private miningPools: Map<string, MiningPool>;
   private networkHashrates: Map<string, NetworkHashrate>;
   private publishedBlocks: Map<number, PublishedBlock>;
-  private bettingOptions: Map<number, BettingOption>;
   private reserveAddresses: Map<string, ReserveAddress>;
+  private blockMinerOdds: Map<number, BlockMinerOdds>;
+  private timeBets: Map<number, TimeBets>;
+  private paymentAddresses: Map<number, PaymentAddress>;
   
-  private currentUserId: number;
   private currentBlockId: number;
+  private currentMinerId: number;
   private currentMiningPoolId: number;
   private currentNetworkHashrateId: number;
   private currentPublishedBlockId: number;
-  private currentBettingOptionId: number;
   private currentReserveAddressId: number;
-  private bets: Map<number, Bet>;
-  private currentBetId: number;
+  private currentBlockMinerOddsId: number;
+  private currentTimeBetsId: number;
+  private currentPaymentAddressId: number;
 
   constructor() {
-    this.users = new Map();
     this.blocks = new Map();
+    this.miners = new Map();
     this.miningPools = new Map();
     this.networkHashrates = new Map();
     this.publishedBlocks = new Map();
-    this.bettingOptions = new Map();
     this.reserveAddresses = new Map();
-    this.bets = new Map();
+    this.blockMinerOdds = new Map();
+    this.timeBets = new Map();
+    this.paymentAddresses = new Map();
     
-    this.currentUserId = 1;
     this.currentBlockId = 1;
+    this.currentMinerId = 1;
     this.currentMiningPoolId = 1;
     this.currentNetworkHashrateId = 1;
     this.currentPublishedBlockId = 1;
-    this.currentBettingOptionId = 1;
     this.currentReserveAddressId = 1;
-    this.currentBetId = 1;
+    this.currentBlockMinerOddsId = 1;
+    this.currentTimeBetsId = 1;
+    this.currentPaymentAddressId = 1;
   }
 
-  // User operations
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+  // Miner operations
+  async getAllMiners(): Promise<Miner[]> {
+    return Array.from(this.miners.values());
   }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  
+  async getMinerById(id: number): Promise<Miner | undefined> {
+    return this.miners.get(id);
   }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  
+  async createMiner(miner: InsertMiner): Promise<Miner> {
+    const id = this.currentMinerId++;
+    const newMiner: Miner = { ...miner, id };
+    this.miners.set(id, newMiner);
+    return newMiner;
   }
 
   // Block operations
@@ -234,29 +222,40 @@ export class MemStorage implements IStorage {
     return updatedBlock;
   }
 
-  // Betting Option operations
-  async getAllBettingOptions(): Promise<BettingOption[]> {
-    return Array.from(this.bettingOptions.values());
+  // Block Miner Odds operations
+  async getAllBlockMinerOdds(): Promise<BlockMinerOdds[]> {
+    return Array.from(this.blockMinerOdds.values());
   }
   
-  async getBettingOptionsForBlock(height: number): Promise<BettingOption[]> {
-    return Array.from(this.bettingOptions.values()).filter(option => option.blockHeight === height);
+  async getBlockMinerOddsByBlockNumber(blockNumber: number): Promise<BlockMinerOdds[]> {
+    return Array.from(this.blockMinerOdds.values()).filter(odds => odds.blockNumber === blockNumber);
   }
   
-  async createBettingOption(option: InsertBettingOption): Promise<BettingOption> {
-    const id = this.currentBettingOptionId++;
-    const newOption: BettingOption = { ...option, id };
-    this.bettingOptions.set(id, newOption);
-    return newOption;
+  async getBlockMinerOddsById(id: number): Promise<BlockMinerOdds | undefined> {
+    return this.blockMinerOdds.get(id);
   }
   
-  async updateBettingOption(id: number, option: Partial<InsertBettingOption>): Promise<BettingOption | undefined> {
-    const existingOption = this.bettingOptions.get(id);
-    if (!existingOption) return undefined;
+  async createBlockMinerOdds(odds: InsertBlockMinerOdds): Promise<BlockMinerOdds> {
+    const id = this.currentBlockMinerOddsId++;
+    const newOdds: BlockMinerOdds = { 
+      ...odds, 
+      id, 
+      createdAt: new Date(),
+      minerId: odds.minerId || null,
+      hitOdds: odds.hitOdds || 2.0,
+      noHitOdds: odds.noHitOdds || 2.0
+    };
+    this.blockMinerOdds.set(id, newOdds);
+    return newOdds;
+  }
+  
+  async updateBlockMinerOdds(id: number, odds: Partial<InsertBlockMinerOdds>): Promise<BlockMinerOdds | undefined> {
+    const existingOdds = this.blockMinerOdds.get(id);
+    if (!existingOdds) return undefined;
     
-    const updatedOption: BettingOption = { ...existingOption, ...option };
-    this.bettingOptions.set(id, updatedOption);
-    return updatedOption;
+    const updatedOdds: BlockMinerOdds = { ...existingOdds, ...odds };
+    this.blockMinerOdds.set(id, updatedOdds);
+    return updatedOdds;
   }
 
   // Reserve Address operations
@@ -284,104 +283,77 @@ export class MemStorage implements IStorage {
     return updatedAddress;
   }
 
-  // Block Miner Odds operations (stubs)
-  async getAllBlockMinerOdds(): Promise<BlockMinerOdds[]> {
-    return [];
-  }
-
-  async getBlockMinerOddsByBlockNumber(blockNumber: number): Promise<BlockMinerOdds[]> {
-    return [];
-  }
-
-  async getBlockMinerOddsById(id: number): Promise<BlockMinerOdds | undefined> {
-    return undefined;
-  }
-
-  async createBlockMinerOdds(odds: InsertBlockMinerOdds): Promise<BlockMinerOdds> {
-    return { id: 1, ...odds, createdAt: new Date() };
-  }
-
-  async updateBlockMinerOdds(id: number, odds: Partial<InsertBlockMinerOdds>): Promise<BlockMinerOdds | undefined> {
-    return undefined;
-  }
-
-  // Time Bets operations (stubs)
+  // Time Bets operations
   async getAllTimeBets(): Promise<TimeBets[]> {
-    return [];
+    return Array.from(this.timeBets.values());
   }
 
   async getTimeBetByBlockNumber(blockNumber: number): Promise<TimeBets | undefined> {
-    return undefined;
+    return Array.from(this.timeBets.values()).find(bet => bet.blockNumber === blockNumber);
   }
 
   async getTimeBetById(id: number): Promise<TimeBets | undefined> {
-    return undefined;
+    return this.timeBets.get(id);
   }
 
   async createTimeBet(bet: InsertTimeBets): Promise<TimeBets> {
-    return { id: 1, ...bet, createdAt: new Date() };
-  }
-
-  async updateTimeBet(id: number, bet: Partial<InsertTimeBets>): Promise<TimeBets | undefined> {
-    return undefined;
-  }
-
-  // Payment Addresses operations (stubs)
-  async getAllPaymentAddresses(): Promise<PaymentAddress[]> {
-    return [];
-  }
-
-  async getPaymentAddressById(id: number): Promise<PaymentAddress | undefined> {
-    return undefined;
-  }
-
-  async getPaymentAddressesForBet(betId: number, betType: string): Promise<PaymentAddress[]> {
-    return [];
-  }
-
-  async createPaymentAddress(address: InsertPaymentAddress): Promise<PaymentAddress> {
-    return { id: 1, ...address, createdAt: new Date() };
-  }
-
-  async updatePaymentAddress(id: number, address: Partial<InsertPaymentAddress>): Promise<PaymentAddress | undefined> {
-    return undefined;
-  }
-  
-  // Bet operations
-  async getAllBets(): Promise<Bet[]> {
-    return Array.from(this.bets.values()).sort((a, b) => {
-      // Sort by timestamp descending (newest first)
-      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-    });
-  }
-
-  async getBetById(id: number): Promise<Bet | undefined> {
-    return this.bets.get(id);
-  }
-
-  async getBetsByBlockId(blockId: number): Promise<Bet[]> {
-    return Array.from(this.bets.values())
-      .filter(bet => bet.blockId === blockId)
-      .sort((a, b) => {
-        // Sort by timestamp descending (newest first)
-        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-      });
-  }
-
-  async createBet(bet: InsertBet): Promise<Bet> {
-    const id = this.currentBetId++;
-    const newBet: Bet = { ...bet, id };
-    this.bets.set(id, newBet);
+    const id = this.currentTimeBetsId++;
+    const newBet: TimeBets = { 
+      ...bet, 
+      id, 
+      createdAt: new Date(),
+      underMinutesOdds: bet.underMinutesOdds || 2.0,
+      overMinutesOdds: bet.overMinutesOdds || 2.0
+    };
+    this.timeBets.set(id, newBet);
     return newBet;
   }
 
-  async updateBet(id: number, bet: Partial<InsertBet>): Promise<Bet | undefined> {
-    const existingBet = this.bets.get(id);
+  async updateTimeBet(id: number, bet: Partial<InsertTimeBets>): Promise<TimeBets | undefined> {
+    const existingBet = this.timeBets.get(id);
     if (!existingBet) return undefined;
     
-    const updatedBet: Bet = { ...existingBet, ...bet };
-    this.bets.set(id, updatedBet);
+    const updatedBet: TimeBets = { ...existingBet, ...bet };
+    this.timeBets.set(id, updatedBet);
     return updatedBet;
+  }
+
+  // Payment Addresses operations
+  async getAllPaymentAddresses(): Promise<PaymentAddress[]> {
+    return Array.from(this.paymentAddresses.values());
+  }
+
+  async getPaymentAddressById(id: number): Promise<PaymentAddress | undefined> {
+    return this.paymentAddresses.get(id);
+  }
+
+  async getPaymentAddressesByBlockNumber(blockNumber: number, betType: string, outcome: string): Promise<PaymentAddress[]> {
+    return Array.from(this.paymentAddresses.values()).filter(address => 
+      address.blockNumber === blockNumber && 
+      address.betType === betType && 
+      address.outcome === outcome
+    );
+  }
+
+  async createPaymentAddress(address: InsertPaymentAddress): Promise<PaymentAddress> {
+    const id = this.currentPaymentAddressId++;
+    const newAddress: PaymentAddress = { 
+      ...address, 
+      id, 
+      createdAt: new Date(), 
+      poolSlug: address.poolSlug || null 
+    };
+    this.paymentAddresses.set(id, newAddress);
+    return newAddress;
+  }
+
+  async updatePaymentAddress(id: number, address: Partial<InsertPaymentAddress>): Promise<PaymentAddress | undefined> {
+    const existingAddress = this.paymentAddresses.get(id);
+    if (!existingAddress) return undefined;
+    
+    const updatedAddress: PaymentAddress = { ...existingAddress, ...address };
+    this.paymentAddresses.set(id, updatedAddress);
+    return updatedAddress;
   }
 }
 

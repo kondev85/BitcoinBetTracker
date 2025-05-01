@@ -594,14 +594,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Published blocks endpoints - blocks that are available for betting
   app.post("/api/published-blocks", async (req, res) => {
     try {
-      const blockData = req.body;
+      const { height, estimatedTime, timeThreshold = 10, isActive = true } = req.body;
       
       // Add validation for required fields
-      if (!blockData.height) {
+      if (!height) {
         return res.status(400).json({ error: "Missing required field: height" });
       }
       
+      // Ensure we have an estimatedTime (required field)
+      if (!estimatedTime) {
+        return res.status(400).json({ error: "Missing required field: estimatedTime" });
+      }
+      
       // Create published block
+      const blockData = {
+        height: parseInt(height),
+        estimatedTime: new Date(estimatedTime),
+        timeThreshold,
+        isActive
+      };
+      
       const newBlock = await storage.createPublishedBlock(blockData);
       res.status(201).json(newBlock);
     } catch (error) {

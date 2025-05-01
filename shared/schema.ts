@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, real, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, real, boolean, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -29,6 +29,16 @@ export const blocks = pgTable("blocks", {
   txCount: integer("tx_count"), // Number of transactions
 });
 
+// Published blocks for betting
+export const publishedBlocks = pgTable("published_blocks", {
+  id: serial("id").primaryKey(),
+  height: integer("height").notNull().unique(), // Block height
+  estimatedTime: timestamp("estimated_time").notNull(), // Estimated time the block will be found
+  timeThreshold: real("time_threshold").notNull().default(10), // Minutes threshold for time bets
+  isActive: boolean("is_active").notNull().default(true), // Whether betting is active
+  createdAt: timestamp("created_at").defaultNow(), // When this block was published for betting
+});
+
 // Block-specific miner odds (mining pool betting)
 export const blockMinerOdds = pgTable("block_miner_odds", {
   id: serial("id").primaryKey(),
@@ -49,10 +59,20 @@ export const timeBets = pgTable("time_bets", {
   createdAt: timestamp("created_at").defaultNow(), // When this betting option was created
 });
 
+// Reserve addresses for different cryptocurrencies
+export const reserveAddresses = pgTable("reserve_addresses", {
+  id: serial("id").primaryKey(),
+  currency: text("currency").notNull().unique(), // 'BTC', 'ETH', 'USDC', 'LIGHTNING', 'LITECOIN', etc.
+  address: text("address").notNull(),
+  memo: text("memo"), // For certain currencies that require memos
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Payment addresses for cryptocurrency payments
 export const paymentAddresses = pgTable("payment_addresses", {
   id: serial("id").primaryKey(),
-  betId: integer("bet_id").notNull(),
+  blockNumber: integer("block_number").notNull(),
+  poolSlug: text("pool_slug"), // For miner bets
   betType: text("bet_type").notNull(), // 'miner' or 'time'
   outcome: text("outcome").notNull(), // 'hit', 'no_hit', 'under', or 'over'
   currency: text("currency").notNull(), // 'BTC', 'ETH', 'USDC', 'LIGHTNING', 'LITECOIN', etc.
@@ -60,18 +80,24 @@ export const paymentAddresses = pgTable("payment_addresses", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Bets placed by users
-export const bets = pgTable("bets", {
+// Mining pools data (from mempool.space API)
+export const miningPools = pgTable("mining_pools", {
   id: serial("id").primaryKey(),
-  blockId: integer("block_id").notNull(),
-  minerId: integer("miner_id").notNull(),
-  amount: real("amount").notNull(),
-  odds: real("odds").notNull(),
-  isNoHitBet: boolean("is_no_hit_bet").notNull().default(false),
-  isTimeBet: boolean("is_time_bet").notNull().default(false),
-  isOverMinutes: boolean("is_over_minutes").notNull().default(false),
-  status: text("status").notNull(), // pending, won, lost
-  timestamp: timestamp("timestamp").notNull(),
+  name: text("name").notNull().unique(), // Pool slug (e.g., "foundryusa", "antpool")
+  displayName: text("display_name").notNull(), // Human-readable name (e.g., "Foundry USA", "AntPool")
+  color: text("color").notNull(), // Color for UI display
+  hashrate24h: real("hashrate_24h").notNull().default(0), // Percentage hashrate last 24h
+  hashrate3d: real("hashrate_3d").notNull().default(0), // Percentage hashrate last 3 days
+  hashrate1w: real("hashrate_1w").notNull().default(0), // Percentage hashrate last week
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Network hashrate data
+export const networkHashrate = pgTable("network_hashrate", {
+  id: serial("id").primaryKey(),
+  period: text("period").notNull().unique(), // '24h', '3d', '1w'
+  hashrate: real("hashrate").notNull(), // In hashes per second
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Schemas for data insertion
@@ -98,6 +124,13 @@ export const insertBlockSchema = createInsertSchema(blocks).pick({
   txCount: true,
 });
 
+export const insertPublishedBlockSchema = createInsertSchema(publishedBlocks).pick({
+  height: true,
+  estimatedTime: true,
+  timeThreshold: true,
+  isActive: true
+});
+
 export const insertBlockMinerOddsSchema = createInsertSchema(blockMinerOdds).pick({
   blockNumber: true,
   minerId: true,
@@ -112,34 +145,52 @@ export const insertTimeBetsSchema = createInsertSchema(timeBets).pick({
   overMinutesOdds: true
 });
 
+export const insertReserveAddressSchema = createInsertSchema(reserveAddresses).pick({
+  currency: true,
+  address: true,
+  memo: true
+});
+
 export const insertPaymentAddressSchema = createInsertSchema(paymentAddresses).pick({
-  betId: true,
+  blockNumber: true,
+  poolSlug: true,
   betType: true,
   outcome: true,
   currency: true,
   address: true
 });
 
-export const insertBetSchema = createInsertSchema(bets).pick({
-  blockId: true,
-  minerId: true,
-  amount: true,
-  odds: true,
-  isNoHitBet: true,
-  isTimeBet: true,
-  isOverMinutes: true,
+export const insertMiningPoolSchema = createInsertSchema(miningPools).pick({
+  name: true,
+  displayName: true,
+  color: true,
+  hashrate24h: true,
+  hashrate3d: true,
+  hashrate1w: true
+});
+
+export const insertNetworkHashrateSchema = createInsertSchema(networkHashrate).pick({
+  period: true,
+  hashrate: true
 });
 
 // Types for use in application code
 export type InsertMiner = z.infer<typeof insertMinerSchema>;
 export type InsertBlock = z.infer<typeof insertBlockSchema>;
+export type InsertPublishedBlock = z.infer<typeof insertPublishedBlockSchema>;
 export type InsertBlockMinerOdds = z.infer<typeof insertBlockMinerOddsSchema>;
 export type InsertTimeBets = z.infer<typeof insertTimeBetsSchema>;
+export type InsertReserveAddress = z.infer<typeof insertReserveAddressSchema>;
 export type InsertPaymentAddress = z.infer<typeof insertPaymentAddressSchema>;
-export type InsertBet = z.infer<typeof insertBetSchema>;
+export type InsertMiningPool = z.infer<typeof insertMiningPoolSchema>;
+export type InsertNetworkHashrate = z.infer<typeof insertNetworkHashrateSchema>;
+
 export type Miner = typeof miners.$inferSelect;
 export type Block = typeof blocks.$inferSelect;
+export type PublishedBlock = typeof publishedBlocks.$inferSelect;
 export type BlockMinerOdds = typeof blockMinerOdds.$inferSelect;
 export type TimeBets = typeof timeBets.$inferSelect;
+export type ReserveAddress = typeof reserveAddresses.$inferSelect;
 export type PaymentAddress = typeof paymentAddresses.$inferSelect;
-export type Bet = typeof bets.$inferSelect;
+export type MiningPool = typeof miningPools.$inferSelect;
+export type NetworkHashrate = typeof networkHashrate.$inferSelect;

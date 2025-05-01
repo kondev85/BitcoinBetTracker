@@ -99,6 +99,8 @@ export class MemStorage implements IStorage {
   private currentPublishedBlockId: number;
   private currentBettingOptionId: number;
   private currentReserveAddressId: number;
+  private bets: Map<number, Bet>;
+  private currentBetId: number;
 
   constructor() {
     this.users = new Map();
@@ -108,6 +110,7 @@ export class MemStorage implements IStorage {
     this.publishedBlocks = new Map();
     this.bettingOptions = new Map();
     this.reserveAddresses = new Map();
+    this.bets = new Map();
     
     this.currentUserId = 1;
     this.currentBlockId = 1;
@@ -116,6 +119,7 @@ export class MemStorage implements IStorage {
     this.currentPublishedBlockId = 1;
     this.currentBettingOptionId = 1;
     this.currentReserveAddressId = 1;
+    this.currentBetId = 1;
   }
 
   // User operations
@@ -341,6 +345,43 @@ export class MemStorage implements IStorage {
 
   async updatePaymentAddress(id: number, address: Partial<InsertPaymentAddress>): Promise<PaymentAddress | undefined> {
     return undefined;
+  }
+  
+  // Bet operations
+  async getAllBets(): Promise<Bet[]> {
+    return Array.from(this.bets.values()).sort((a, b) => {
+      // Sort by timestamp descending (newest first)
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+    });
+  }
+
+  async getBetById(id: number): Promise<Bet | undefined> {
+    return this.bets.get(id);
+  }
+
+  async getBetsByBlockId(blockId: number): Promise<Bet[]> {
+    return Array.from(this.bets.values())
+      .filter(bet => bet.blockId === blockId)
+      .sort((a, b) => {
+        // Sort by timestamp descending (newest first)
+        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      });
+  }
+
+  async createBet(bet: InsertBet): Promise<Bet> {
+    const id = this.currentBetId++;
+    const newBet: Bet = { ...bet, id };
+    this.bets.set(id, newBet);
+    return newBet;
+  }
+
+  async updateBet(id: number, bet: Partial<InsertBet>): Promise<Bet | undefined> {
+    const existingBet = this.bets.get(id);
+    if (!existingBet) return undefined;
+    
+    const updatedBet: Bet = { ...existingBet, ...bet };
+    this.bets.set(id, updatedBet);
+    return updatedBet;
   }
 }
 

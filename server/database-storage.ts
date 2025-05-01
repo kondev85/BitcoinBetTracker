@@ -3,13 +3,13 @@ import { eq, desc, asc, and } from 'drizzle-orm';
 import { 
   users, blocks, miningPools, networkHashrate, 
   publishedBlocks, bettingOptions, reserveAddresses,
-  blockMinerOdds, timeBets, paymentAddresses,
+  blockMinerOdds, timeBets, paymentAddresses, bets,
   type User, type InsertUser, type Block, type InsertBlock,
   type MiningPool, type InsertMiningPool, type NetworkHashrate, type InsertNetworkHashrate,
   type PublishedBlock, type InsertPublishedBlock, type BettingOption, type InsertBettingOption,
   type ReserveAddress, type InsertReserveAddress,
   type BlockMinerOdds, type InsertBlockMinerOdds, type TimeBets, type InsertTimeBets,
-  type PaymentAddress, type InsertPaymentAddress
+  type PaymentAddress, type InsertPaymentAddress, type Bet, type InsertBet
 } from '@shared/schema';
 import { IStorage } from './storage';
 
@@ -300,5 +300,42 @@ export class DatabaseStorage implements IStorage {
       .returning();
       
     return updatedAddress;
+  }
+  
+  // Bet operations
+  async getAllBets(): Promise<Bet[]> {
+    return await db.select().from(bets).orderBy(desc(bets.timestamp));
+  }
+
+  async getBetById(id: number): Promise<Bet | undefined> {
+    const [bet] = await db.select().from(bets).where(eq(bets.id, id));
+    return bet;
+  }
+
+  async getBetsByBlockId(blockId: number): Promise<Bet[]> {
+    return await db.select().from(bets)
+      .where(eq(bets.blockId, blockId))
+      .orderBy(desc(bets.timestamp));
+  }
+
+  async createBet(bet: InsertBet): Promise<Bet> {
+    const [newBet] = await db.insert(bets).values(bet).returning();
+    return newBet;
+  }
+
+  async updateBet(id: number, bet: Partial<InsertBet>): Promise<Bet | undefined> {
+    const [existingBet] = await db.select().from(bets).where(eq(bets.id, id));
+    
+    if (!existingBet) {
+      return undefined;
+    }
+    
+    const [updatedBet] = await db
+      .update(bets)
+      .set(bet)
+      .where(eq(bets.id, id))
+      .returning();
+      
+    return updatedBet;
   }
 }

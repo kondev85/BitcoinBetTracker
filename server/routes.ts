@@ -10,6 +10,14 @@ import {
   insertTimeBetsSchema,
   insertPaymentAddressSchema,
 } from "@shared/schema";
+
+// Create a schema for published blocks from the block schema
+const insertPublishedBlockSchema = z.object({
+  height: z.number(),
+  status: z.string(),
+  publishedAt: z.string().transform(str => new Date(str)),
+  isActive: z.boolean().default(true),
+});
 import { z } from "zod";
 import { getRedisClient } from "./redis";
 import axios from "axios";
@@ -57,7 +65,7 @@ async function initializeData() {
 async function fetchAndCacheMiningPools(period: string = '1w'): Promise<any> {
   try {
     // Get Redis client if available
-    const redisClient = getRedisClient();
+    let redisClient = getRedisClient();
     
     // Check if data is in Redis cache (if Redis is connected)
     if (redisClient) {
@@ -116,7 +124,6 @@ async function fetchAndCacheMiningPools(period: string = '1w'): Promise<any> {
     };
     
     // Cache the data in Redis if connected (expire after 15 minutes)
-    const redisClient = getRedisClient();
     if (redisClient) {
       try {
         const cacheKey = `mempool:mining-pools:${period}`;
@@ -267,6 +274,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(addresses);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch reserve addresses" });
+    }
+  });
+  
+  // Get payment addresses for a specific bet
+  app.get("/api/payment-addresses/:betId/:betType", async (req, res) => {
+    try {
+      const betId = parseInt(req.params.betId);
+      const betType = req.params.betType;
+      
+      // Validate betType
+      if (!['miner', 'time'].includes(betType)) {
+        return res.status(400).json({ error: "Invalid bet type. Allowed values: miner, time" });
+      }
+      
+      const addresses = await storage.getPaymentAddressesForBet(betId, betType);
+      res.json(addresses);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch payment addresses" });
     }
   });
   
@@ -482,6 +507,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: error.errors });
       }
       res.status(500).json({ error: "Failed to update mining pool" });
+    }
+  });
+  
+  // User betting endpoints
+  app.post("/api/bets", async (req, res) => {
+    try {
+      const betData = req.body;
+      
+      // Add validation for required fields
+      if (!betData.blockId || !betData.amount || !betData.odds) {
+        return res.status(400).json({ error: "Missing required fields: blockId, amount, odds" });
+      }
+      
+      // If it's a miner bet, minerId is required
+      if (!betData.isTimeBet && !betData.minerId) {
+        return res.status(400).json({ error: "Miner bets require minerId" });
+      }
+      
+      // Set current timestamp
+      betData.timestamp = new Date();
+      
+      // Set initial status to pending
+      betData.status = "pending";
+      
+      const newBet = await storage.createBet(betData);
+      res.status(201).json(newBet);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error('Error creating bet:', error);
+      res.status(500).json({ error: "Failed to create bet" });
+    }
+  });
+  
+  // Get all bets or bets for a specific block
+  app.get("/api/bets", async (req, res) => {
+    try {
+      const blockId = req.query.blockId ? parseInt(req.query.blockId as string) : undefined;
+      
+      let bets;
+      if (blockId) {
+        // Get bets for a specific block
+        bets = await storage.getBetsByBlockId(blockId);
+      } else {
+        // Get all bets
+        bets = await storage.getAllBets();
+      }
+      
+      res.json(bets);
+    } catch (error) {
+      console.error('Error fetching bets:', error);
+      res.status(500).json({ error: "Failed to fetch bets" });
     }
   });
 

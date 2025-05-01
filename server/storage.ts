@@ -74,6 +74,13 @@ export interface IStorage {
   getPaymentAddressesForBet(betId: number, betType: string): Promise<PaymentAddress[]>;
   createPaymentAddress(address: InsertPaymentAddress): Promise<PaymentAddress>;
   updatePaymentAddress(id: number, address: Partial<InsertPaymentAddress>): Promise<PaymentAddress | undefined>;
+  
+  // Bet operations
+  getAllBets(): Promise<Bet[]>;
+  getBetById(id: number): Promise<Bet | undefined>;
+  getBetsByBlockId(blockId: number): Promise<Bet[]>;
+  createBet(bet: InsertBet): Promise<Bet>;
+  updateBet(id: number, bet: Partial<InsertBet>): Promise<Bet | undefined>;
 }
 
 export class MemStorage implements IStorage {

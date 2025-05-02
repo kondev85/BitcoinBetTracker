@@ -276,7 +276,7 @@ export class MemStorage implements IStorage {
       ...odds, 
       id, 
       createdAt: new Date(),
-      minerId: odds.minerId || null,
+      minerId: null, // DEPRECATED: Using poolSlug instead, but field is still required by type
       hitOdds: odds.hitOdds || 2.0,
       noHitOdds: odds.noHitOdds || 2.0
     };

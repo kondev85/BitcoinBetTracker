@@ -133,8 +133,7 @@ export const insertPublishedBlockSchema = createInsertSchema(publishedBlocks).pi
 
 export const insertBlockMinerOddsSchema = createInsertSchema(blockMinerOdds).pick({
   blockNumber: true,
-  minerId: true,
-  poolSlug: true,
+  poolSlug: true,  // We only use poolSlug now, not minerId
   hitOdds: true,
   noHitOdds: true
 });

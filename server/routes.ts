@@ -528,12 +528,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/admin/mining-pools/:name", async (req, res) => {
+  app.put("/api/admin/mining-pools/:poolSlug", async (req, res) => {
     try {
-      const name = req.params.name;
+      const poolSlug = req.params.poolSlug;
       const poolData = req.body;
       
-      const updatedPool = await storage.updateMiningPool(name, poolData);
+      const updatedPool = await storage.updateMiningPool(poolSlug, poolData);
       
       if (!updatedPool) {
         return res.status(404).json({ error: "Mining pool not found" });
@@ -740,8 +740,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Count blocks by mining pool
       const blocksByPool: Record<string, number> = {};
       blocks.forEach(block => {
-        // Our blocks have poolSlug property, not miningPool
-        const miningPool = pools.find(p => p.name === block.poolSlug || p.name.toLowerCase() === block.poolSlug?.toLowerCase())?.name || 'Unknown';
+        // Our blocks have poolSlug property
+        const miningPool = pools.find(p => p.poolSlug === block.poolSlug || p.poolSlug.toLowerCase() === block.poolSlug?.toLowerCase())?.poolSlug || 'Unknown';
         
         if (!blocksByPool[miningPool]) {
           blocksByPool[miningPool] = 0;
@@ -752,14 +752,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate mining pool hashrates based on block proportion
       const totalBlocks = blocks.length;
       const poolStats = pools.map(pool => {
-        const blocksFound = blocksByPool[pool.name] || 0;
+        const blocksFound = blocksByPool[pool.poolSlug] || 0;
         // Use weekly hashrate for better accuracy in calculating expected blocks
         const hashratePct = pool.hashrate1w || 0;
         const expected = (hashratePct * totalBlocks) / 100;
         const luck = expected > 0 ? (blocksFound / expected) * 100 : 0;
         
         return {
-          name: pool.name,
+          name: pool.poolSlug, // For backward compatibility
+          poolSlug: pool.poolSlug,
           displayName: pool.displayName,
           color: pool.color,
           hashratePct,

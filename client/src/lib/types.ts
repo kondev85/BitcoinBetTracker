@@ -19,7 +19,8 @@ export interface Block {
 
 export interface MiningPool {
   id: number;
-  name: string;
+  poolSlug: string;
+  name?: string; // Keep for backward compatibility
   displayName: string;
   color: string;
   hashrate24h: number | null;

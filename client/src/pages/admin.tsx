@@ -611,7 +611,7 @@ function MiningPoolsTab() {
           break;
       }
       
-      await updateMiningPool(pool.name, updateData);
+      await updateMiningPool(pool.poolSlug, updateData);
       
       toast({
         title: "Hashrate updated",
@@ -654,7 +654,7 @@ function MiningPoolsTab() {
               </TableHeader>
               <TableBody>
                 {miningPools.map((pool) => (
-                  <TableRow key={pool.name}>
+                  <TableRow key={pool.poolSlug}>
                     <TableCell className="font-medium">{pool.displayName}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

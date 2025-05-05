@@ -113,8 +113,8 @@ export const updateBettingOption = async (id: number, option: Partial<BettingOpt
   return updatedOption;
 };
 
-export const updateMiningPool = async (name: string, pool: Partial<MiningPool>): Promise<MiningPool> => {
-  const res = await apiRequest('PUT', `/api/admin/mining-pools/${name}`, pool);
+export const updateMiningPool = async (poolSlug: string, pool: Partial<MiningPool>): Promise<MiningPool> => {
+  const res = await apiRequest('PUT', `/api/admin/mining-pools/${poolSlug}`, pool);
   const updatedPool = await res.json();
   
   // Invalidate queries

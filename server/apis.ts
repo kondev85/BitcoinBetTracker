@@ -468,6 +468,22 @@ export const setRedisConnected = (isConnected: boolean) => {
   console.log('Redis connection status set to:', redisConnected ? 'Connected' : 'Not connected');
 };
 
+// GET /api/published-blocks - Get all published blocks
+apiRouter.get('/published-blocks', async (req, res) => {
+  try {
+    // Get all published blocks or active ones based on query parameter
+    const showAll = req.query.all === 'true';
+    const blocks = showAll 
+      ? await storage.getAllPublishedBlocks()
+      : await storage.getActivePublishedBlocks();
+    
+    res.json(blocks);
+  } catch (error) {
+    console.error('Error fetching published blocks:', error);
+    res.status(500).json({ error: 'Failed to fetch published blocks' });
+  }
+});
+
 // Admin routes for publishing blocks
 adminRouter.post("/published-blocks", async (req, res) => {
   try {

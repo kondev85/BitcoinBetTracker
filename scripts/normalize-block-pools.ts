@@ -72,13 +72,17 @@ async function normalizeBlockPools() {
     console.log('Starting to normalize pool slugs in blocks table...');
     
     // Get all unique pool slugs from blocks table
-    const query = sql`
-      SELECT DISTINCT pool_slug FROM blocks 
-      WHERE pool_slug IS NOT NULL AND pool_slug <> ''
-    `;
+    const result = await db
+      .selectDistinct({ poolSlug: schema.blocks.poolSlug })
+      .from(schema.blocks)
+      .where(
+        sql`${schema.blocks.poolSlug} IS NOT NULL AND ${schema.blocks.poolSlug} <> ''`
+      );
     
-    const result = await db.execute(query);
-    const poolSlugs: string[] = result.rows.map((row: any) => row.pool_slug);
+    // Use filter-map approach to guarantee non-null values
+    const poolSlugs = result
+      .filter(row => row.poolSlug !== null && row.poolSlug !== '')
+      .map(row => row.poolSlug as string);
     
     console.log(`Found ${poolSlugs.length} unique pool slugs in blocks table`);
     
@@ -94,13 +98,19 @@ async function normalizeBlockPools() {
         // Update blocks with this slug
         console.log(`Normalizing: ${poolSlug} -> ${normalizedSlug}`);
         
-        // Count blocks with this slug
-        const countQuery = sql`
-          SELECT COUNT(*) as count FROM blocks 
-          WHERE pool_slug = ${poolSlug}
-        `;
-        const countResult = await db.execute(countQuery);
-        const count = parseInt(countResult.rows[0].count || '0');
+        // Count blocks with this slug using prepared statement
+        const countResult = await db.select({
+          count: sql`COUNT(*)`.as('count')
+        })
+        .from(schema.blocks)
+        .where(eq(schema.blocks.poolSlug, poolSlug));
+        
+        // Get count from result, handling various return types
+        const count = countResult[0] ? 
+          (typeof countResult[0].count === 'number' 
+            ? countResult[0].count 
+            : parseInt(String(countResult[0].count) || '0')) 
+          : 0;
         
         // Update blocks
         await db
@@ -116,13 +126,14 @@ async function normalizeBlockPools() {
     console.log(`Normalization complete. Updated ${totalUpdated} blocks.`);
     
     // Get the final list of unique pool slugs
-    const finalQuery = sql`
-      SELECT DISTINCT pool_slug FROM blocks 
-      WHERE pool_slug IS NOT NULL AND pool_slug <> ''
-    `;
+    const finalResult = await db
+      .selectDistinct({ poolSlug: schema.blocks.poolSlug })
+      .from(schema.blocks)
+      .where(
+        sql`${schema.blocks.poolSlug} IS NOT NULL AND ${schema.blocks.poolSlug} <> ''`
+      );
     
-    const finalResult = await db.execute(finalQuery);
-    const finalPoolSlugs: string[] = finalResult.rows.map((row: any) => row.pool_slug);
+    const finalPoolSlugs: string[] = finalResult.map(row => row.poolSlug || 'unknown');
     
     console.log(`Now have ${finalPoolSlugs.length} unique pool slugs in blocks table`);
     console.log('Final pool slug list: ', finalPoolSlugs.join(', '));

@@ -3,6 +3,7 @@ import * as schema from '../shared/schema';
 import axios from 'axios';
 import { eq, desc, sql } from 'drizzle-orm';
 import { type InsertBlock } from '../shared/schema';
+import { normalizePoolSlug } from '../shared/utils/poolUtils';
 
 // Constants
 const MEMPOOL_API_BASE = 'https://mempool.space/api/v1';
@@ -136,43 +137,21 @@ async function processBlock(block: MempoolBlock): Promise<void> {
       ? (blockTimestamp.getTime() - previousTimestamp.getTime()) / (1000 * 60)
       : null;
     
-    // Normalize pool slug
-    let poolSlug = '';
+    // Extract pool information from block
+    let rawPoolSlug = '';
     
     if (block.extras?.pool?.slug) {
-      // Use the slug provided by the API, but normalize it for consistency
-      poolSlug = block.extras.pool.slug.toLowerCase();
+      // Use the slug provided by the API
+      rawPoolSlug = block.extras.pool.slug.toLowerCase();
     } else if (block.extras?.pool?.name) {
       // Convert name to slug format if no slug is provided
-      poolSlug = block.extras.pool.name.toLowerCase();
+      rawPoolSlug = block.extras.pool.name.toLowerCase();
     } else {
-      poolSlug = 'unknown';
+      rawPoolSlug = 'unknown';
     }
     
-    // Standardize common pool names for consistency
-    switch (poolSlug) {
-      case 'foundry-usa':
-      case 'foundryusa':
-        poolSlug = 'foundryusa';
-        break;
-      case 'mara-pool':
-      case 'marapool':
-        poolSlug = 'marapool';
-        break;
-      case 'binance-pool':
-      case 'binancepool':
-        poolSlug = 'binancepool';
-        break;
-      case 'carbon-neutral':
-      case 'carbonneutral':
-      case 'carbon-negative':
-      case 'carbonnegative':
-        poolSlug = 'carbonnegative';
-        break;
-      default:
-        // Remove special characters for consistent formatting
-        poolSlug = poolSlug.replace(/[^a-z0-9]/g, '');
-    }
+    // Use our centralized utility to normalize pool slug
+    const poolSlug = normalizePoolSlug(rawPoolSlug);
     
     // Convert subsidy amount (block reward) plus fees to total output
     const blockSubsidy = 3.125; // Current block subsidy as of April 2024 halving

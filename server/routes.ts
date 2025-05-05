@@ -325,10 +325,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes
   app.post("/api/admin/published-blocks", async (req, res) => {
     try {
-      const { height, estimatedTime, timeThreshold, isActive } = req.body;
+      // Support both estimatedDate or estimatedTime (frontend uses estimatedDate)
+      const { height, estimatedDate, estimatedTime, timeThreshold, isActive, description, isSpecial } = req.body;
       
-      if (!height || !estimatedTime) {
-        return res.status(400).json({ error: "Missing required fields: height and estimatedTime" });
+      // Use estimatedDate if provided, otherwise fall back to estimatedTime
+      const estimatedDateTime = estimatedDate || estimatedTime;
+      
+      if (!height || !estimatedDateTime) {
+        return res.status(400).json({ error: "Missing required fields: height and estimated date/time" });
       }
       
       const existingBlock = await storage.getPublishedBlockByHeight(parseInt(height));
@@ -337,11 +341,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Block with this height already exists" });
       }
       
+      // Get the current blockchain height to calculate estimated time if needed
+      let currentBlockHeight;
+      try {
+        const blocksRes = await fetch('https://mempool.space/api/blocks/tip/height');
+        currentBlockHeight = parseInt(await blocksRes.text());
+      } catch (error) {
+        console.error('Failed to fetch current block height:', error);
+        // Default to a reasonable value if we can't get current height
+        currentBlockHeight = 895000;  
+      }
+      
+      // For estimating block time
+      const blockHeightDiff = parseInt(height) - currentBlockHeight;
+      const minutesPerBlock = 10; // Average Bitcoin block time
+      
+      // Calculate the estimated time if not explicitly provided
+      let estimatedTimeDate;
+      if (estimatedDateTime) {
+        estimatedTimeDate = new Date(estimatedDateTime);
+      } else {
+        // Auto-calculate based on current time + (block height difference * 10 minutes)
+        estimatedTimeDate = new Date();
+        estimatedTimeDate.setMinutes(estimatedTimeDate.getMinutes() + (blockHeightDiff * minutesPerBlock));
+      }
+      
       const blockData = {
         height: parseInt(height),
-        estimatedTime: new Date(estimatedTime),
+        estimatedTime: estimatedTimeDate,
         timeThreshold: timeThreshold || 10,
-        isActive: isActive !== undefined ? isActive : true
+        isActive: isActive !== undefined ? isActive : true,
+        description: description || null,
+        isSpecial: isSpecial || false
       };
       
       const newBlock = await storage.createPublishedBlock(blockData);

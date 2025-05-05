@@ -252,6 +252,8 @@ export class MemStorage implements IStorage {
       id,
       timeThreshold: block.timeThreshold || 10,
       isActive: block.isActive !== undefined ? block.isActive : true,
+      isSpecial: block.isSpecial !== undefined ? block.isSpecial : false,
+      description: block.description || null,
       createdAt: new Date()
     };
     this.publishedBlocks.set(block.height, newBlock);

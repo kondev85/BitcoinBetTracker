@@ -36,6 +36,8 @@ export const publishedBlocks = pgTable("published_blocks", {
   estimatedTime: timestamp("estimated_time").notNull(), // Estimated time the block will be found
   timeThreshold: real("time_threshold").notNull().default(10), // Minutes threshold for time bets
   isActive: boolean("is_active").notNull().default(true), // Whether betting is active
+  isSpecial: boolean("is_special").default(false), // Whether this is a featured/special block
+  description: text("description"), // Optional description for the block
   createdAt: timestamp("created_at").defaultNow(), // When this block was published for betting
 });
 
@@ -128,7 +130,9 @@ export const insertPublishedBlockSchema = createInsertSchema(publishedBlocks).pi
   height: true,
   estimatedTime: true,
   timeThreshold: true,
-  isActive: true
+  isActive: true,
+  isSpecial: true,
+  description: true
 });
 
 export const insertBlockMinerOddsSchema = createInsertSchema(blockMinerOdds).pick({

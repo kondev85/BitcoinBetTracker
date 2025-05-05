@@ -26,9 +26,9 @@ export interface IStorage {
   
   // Mining Pool operations
   getAllMiningPools(): Promise<MiningPool[]>;
-  getMiningPoolByName(name: string): Promise<MiningPool | undefined>;
+  getMiningPoolBySlug(poolSlug: string): Promise<MiningPool | undefined>;
   createMiningPool(pool: InsertMiningPool): Promise<MiningPool>;
-  updateMiningPool(name: string, pool: Partial<InsertMiningPool>): Promise<MiningPool | undefined>;
+  updateMiningPool(poolSlug: string, pool: Partial<InsertMiningPool>): Promise<MiningPool | undefined>;
   
   // Network Hashrate operations
   getNetworkHashrate(period: string): Promise<NetworkHashrate | undefined>;
@@ -177,8 +177,8 @@ export class MemStorage implements IStorage {
     return Array.from(this.miningPools.values());
   }
   
-  async getMiningPoolByName(name: string): Promise<MiningPool | undefined> {
-    return this.miningPools.get(name);
+  async getMiningPoolBySlug(poolSlug: string): Promise<MiningPool | undefined> {
+    return this.miningPools.get(poolSlug);
   }
   
   async createMiningPool(pool: InsertMiningPool): Promise<MiningPool> {
@@ -195,12 +195,12 @@ export class MemStorage implements IStorage {
     return newPool;
   }
   
-  async updateMiningPool(name: string, pool: Partial<InsertMiningPool>): Promise<MiningPool | undefined> {
-    const existingPool = this.miningPools.get(name);
+  async updateMiningPool(poolSlug: string, pool: Partial<InsertMiningPool>): Promise<MiningPool | undefined> {
+    const existingPool = this.miningPools.get(poolSlug);
     if (!existingPool) return undefined;
     
     const updatedPool: MiningPool = { ...existingPool, ...pool, updatedAt: new Date() };
-    this.miningPools.set(name, updatedPool);
+    this.miningPools.set(poolSlug, updatedPool);
     return updatedPool;
   }
 

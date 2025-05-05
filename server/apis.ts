@@ -1,10 +1,12 @@
-import { Router } from 'express';
+import { Router, type Express } from 'express';
 import { repository } from './repository';
 import { db } from './db';
 import { z } from 'zod';
 import { sql } from 'drizzle-orm';
 import axios from 'axios';
 import { getRedisClient } from './redis';
+import { storage } from './storage';
+import { registerRoutes } from './routes';
 
 // Create the router
 const apiRouter = Router();

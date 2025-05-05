@@ -254,19 +254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/betting-options", async (req, res) => {
-    try {
-      const blockHeight = req.query.blockHeight ? parseInt(req.query.blockHeight as string) : undefined;
-      
-      const options = blockHeight
-        ? await storage.getBlockMinerOddsByBlockNumber(blockHeight)
-        : await storage.getAllBlockMinerOdds();
-      
-      res.json(options);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch betting options" });
-    }
-  });
+  // Betting options are now handled by the dedicated endpoint below
 
   app.get("/api/reserve-addresses", async (req, res) => {
     try {

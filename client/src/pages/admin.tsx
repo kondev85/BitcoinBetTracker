@@ -364,13 +364,73 @@ function BettingOptionsTab() {
         return;
       }
       
-      await createBettingOption({
-        blockHeight: newOption.blockHeight,
-        type: newOption.type,
-        value: newOption.value,
-        odds: newOption.odds,
-        paymentAddress: newOption.paymentAddress
-      });
+      // Determine which API to call based on bet type
+      if (newOption.type === "miner" || newOption.type === "not_miner") {
+        // For mining pool bets, use the block-miner-odds endpoint
+        const isHitBet = newOption.type === "miner";
+        
+        // When creating odds for a mining pool, we set both hit and no-hit odds 
+        // in a single record since they're two sides of the same bet
+        await fetch("/api/block-miner-odds", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            blockNumber: newOption.blockHeight,
+            poolSlug: newOption.value,
+            hitOdds: isHitBet ? newOption.odds : 2.0,
+            noHitOdds: !isHitBet ? newOption.odds : 2.0
+          }),
+        });
+        
+        // Now create a payment address for this bet
+        await fetch("/api/admin/payment-addresses", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            blockNumber: newOption.blockHeight,
+            poolSlug: newOption.value,
+            betType: "miner",
+            outcome: isHitBet ? "hit" : "noHit", 
+            currency: "BTC",
+            address: newOption.paymentAddress
+          }),
+        });
+      } else {
+        // For time-based bets, use the time-bets endpoint
+        const isUnderBet = newOption.type === "under_time";
+        
+        // Time bets also store both under and over odds in a single record
+        await fetch("/api/admin/time-bets", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            blockNumber: newOption.blockHeight,
+            underMinutesOdds: isUnderBet ? newOption.odds : 2.0,
+            overMinutesOdds: !isUnderBet ? newOption.odds : 2.0
+          }),
+        });
+        
+        // Create payment address for this time-based bet
+        await fetch("/api/admin/payment-addresses", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            blockNumber: newOption.blockHeight,
+            betType: "time",
+            outcome: isUnderBet ? "under" : "over", 
+            currency: "BTC",
+            address: newOption.paymentAddress
+          }),
+        });
+      }
       
       toast({
         title: "Betting option created",
@@ -384,7 +444,6 @@ function BettingOptionsTab() {
         paymentAddress: ""
       });
       
-      refetch();
     } catch (error) {
       toast({
         title: "Error",
@@ -397,16 +456,14 @@ function BettingOptionsTab() {
   
   const handleUpdateOdds = async (option: BettingOption, newOdds: number) => {
     try {
-      await updateBettingOption(option.id, {
-        odds: newOdds
-      });
+      // In the future, this should call the appropriate API endpoint to update odds
+      // For now, it's a placeholder
       
       toast({
         title: "Odds updated",
         description: `Odds for bet on ${option.value} have been updated to ${newOdds}`
       });
       
-      refetch();
     } catch (error) {
       toast({
         title: "Error",

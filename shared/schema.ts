@@ -83,7 +83,7 @@ export const paymentAddresses = pgTable("payment_addresses", {
 // Mining pools data (from mempool.space API)
 export const miningPools = pgTable("mining_pools", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(), // Pool slug (e.g., "foundryusa", "antpool")
+  poolSlug: text("pool_slug").notNull().unique(), // Pool slug (e.g., "foundryusa", "antpool")
   displayName: text("display_name").notNull(), // Human-readable name (e.g., "Foundry USA", "AntPool")
   color: text("color").notNull(), // Color for UI display
   hashrate24h: real("hashrate_24h").notNull().default(0), // Percentage hashrate last 24h
@@ -160,7 +160,7 @@ export const insertPaymentAddressSchema = createInsertSchema(paymentAddresses).p
 });
 
 export const insertMiningPoolSchema = createInsertSchema(miningPools).pick({
-  name: true,
+  poolSlug: true,
   displayName: true,
   color: true,
   hashrate24h: true,

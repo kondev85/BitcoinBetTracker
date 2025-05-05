@@ -468,6 +468,43 @@ export const setRedisConnected = (isConnected: boolean) => {
   console.log('Redis connection status set to:', redisConnected ? 'Connected' : 'Not connected');
 };
 
+// GET /api/reserve-addresses - Get all reserve addresses
+apiRouter.get('/reserve-addresses', async (req, res) => {
+  try {
+    const addresses = await storage.getAllReserveAddresses();
+    res.json(addresses);
+  } catch (error) {
+    console.error('Error fetching reserve addresses:', error);
+    res.status(500).json({ error: 'Failed to fetch reserve addresses' });
+  }
+});
+
+// GET /api/betting-options - Get all available betting options
+apiRouter.get('/betting-options', async (req, res) => {
+  try {
+    // Return available betting options
+    const bettingOptions = [
+      { id: 'mining_pool', name: 'Mining Pool Will Mine', description: 'Bet on which mining pool will mine the next block' },
+      { id: 'block_time', name: 'Block Time', description: 'Bet on when the next block will be mined' }
+    ];
+    res.json(bettingOptions);
+  } catch (error) {
+    console.error('Error fetching betting options:', error);
+    res.status(500).json({ error: 'Failed to fetch betting options' });
+  }
+});
+
+// GET /api/mining-pools - Get all mining pools
+apiRouter.get('/mining-pools', async (req, res) => {
+  try {
+    const pools = await storage.getAllMiningPools();
+    res.json(pools);
+  } catch (error) {
+    console.error('Error fetching mining pools:', error);
+    res.status(500).json({ error: 'Failed to fetch mining pools' });
+  }
+});
+
 // GET /api/published-blocks - Get all published blocks
 apiRouter.get('/published-blocks', async (req, res) => {
   try {

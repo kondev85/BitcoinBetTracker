@@ -63,6 +63,7 @@ export interface ReserveAddress {
 
 export interface MiningPoolStat {
   name: string;
+  poolSlug?: string;
   displayName: string;
   color: string;
   hashratePct: number;

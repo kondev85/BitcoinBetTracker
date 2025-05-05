@@ -475,7 +475,7 @@ function BettingOptionsTab() {
                   </SelectTrigger>
                   <SelectContent>
                     {miningPools?.map((pool) => (
-                      <SelectItem key={pool.name} value={pool.name}>
+                      <SelectItem key={pool.poolSlug || pool.name} value={pool.poolSlug || pool.name || ''}>
                         {pool.displayName}
                       </SelectItem>
                     ))}
@@ -654,7 +654,7 @@ function MiningPoolsTab() {
               </TableHeader>
               <TableBody>
                 {miningPools.map((pool) => (
-                  <TableRow key={pool.poolSlug}>
+                  <TableRow key={pool.poolSlug || pool.name}>
                     <TableCell className="font-medium">{pool.displayName}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

@@ -34,10 +34,11 @@ export default function MiningStats({ initialBlockCount = 10 }: MiningStatsProps
   // We want to show specific top 3 pools: Foundry USA, AntPool, ViaBTC
   // Note that the API returns lowercase names like "foundryusa", "antpool", "viabtc"
   const foundryPool = miningStats?.find(pool => 
-    pool.name.toLowerCase() === "foundryusa" || 
+    pool.name?.toLowerCase() === "foundryusa" || 
     pool.displayName === "Foundry USA"
   ) || {
     name: "foundryusa",
+    poolSlug: "foundryusa",
     displayName: "Foundry USA",
     color: "#F7931A",
     hashratePct: 0,
@@ -47,10 +48,11 @@ export default function MiningStats({ initialBlockCount = 10 }: MiningStatsProps
   };
   
   const antPool = miningStats?.find(pool => 
-    pool.name.toLowerCase() === "antpool" || 
+    pool.name?.toLowerCase() === "antpool" || 
     pool.displayName === "AntPool"
   ) || {
     name: "antpool",
+    poolSlug: "antpool",
     displayName: "AntPool",
     color: "#3B82F6",
     hashratePct: 0,
@@ -60,10 +62,11 @@ export default function MiningStats({ initialBlockCount = 10 }: MiningStatsProps
   };
   
   const viabtcPool = miningStats?.find(pool => 
-    pool.name.toLowerCase() === "viabtc" || 
+    pool.name?.toLowerCase() === "viabtc" || 
     pool.displayName === "ViaBTC"
   ) || {
     name: "viabtc",
+    poolSlug: "viabtc",
     displayName: "ViaBTC",
     color: "#6D28D9",
     hashratePct: 0,
@@ -74,9 +77,12 @@ export default function MiningStats({ initialBlockCount = 10 }: MiningStatsProps
   
   // All other pools will be combined
   const otherPools = miningStats?.filter(pool => 
-    pool.name.toLowerCase() !== "foundryusa" && 
-    pool.name.toLowerCase() !== "antpool" && 
-    pool.name.toLowerCase() !== "viabtc" &&
+    pool.name?.toLowerCase() !== "foundryusa" && 
+    pool.name?.toLowerCase() !== "antpool" && 
+    pool.name?.toLowerCase() !== "viabtc" &&
+    pool.poolSlug !== "foundryusa" && 
+    pool.poolSlug !== "antpool" && 
+    pool.poolSlug !== "viabtc" &&
     pool.displayName !== "Foundry USA" &&
     pool.displayName !== "AntPool" &&
     pool.displayName !== "ViaBTC"
@@ -94,6 +100,7 @@ export default function MiningStats({ initialBlockCount = 10 }: MiningStatsProps
     viabtcPool,
     {
       name: "Others",
+      poolSlug: "others",
       displayName: "Others",
       color: "#6B7280",
       hashratePct: othersHashrate,

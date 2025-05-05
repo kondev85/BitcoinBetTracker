@@ -26,6 +26,9 @@ export interface IStorage {
   
   // Mining Pool operations
   getAllMiningPools(): Promise<MiningPool[]>;
+  // Legacy method - use getMiningPoolBySlug instead
+  getMiningPoolByName(name: string): Promise<MiningPool | undefined>;
+  // New method with better naming
   getMiningPoolBySlug(poolSlug: string): Promise<MiningPool | undefined>;
   createMiningPool(pool: InsertMiningPool): Promise<MiningPool>;
   updateMiningPool(poolSlug: string, pool: Partial<InsertMiningPool>): Promise<MiningPool | undefined>;
@@ -177,6 +180,12 @@ export class MemStorage implements IStorage {
     return Array.from(this.miningPools.values());
   }
   
+  // Old method for backward compatibility
+  async getMiningPoolByName(name: string): Promise<MiningPool | undefined> {
+    return this.miningPools.get(name);
+  }
+  
+  // New method with better naming
   async getMiningPoolBySlug(poolSlug: string): Promise<MiningPool | undefined> {
     return this.miningPools.get(poolSlug);
   }
@@ -195,12 +204,13 @@ export class MemStorage implements IStorage {
     return newPool;
   }
   
-  async updateMiningPool(poolSlug: string, pool: Partial<InsertMiningPool>): Promise<MiningPool | undefined> {
-    const existingPool = this.miningPools.get(poolSlug);
+  // Old method for backward compatibility
+  async updateMiningPool(name: string, pool: Partial<InsertMiningPool>): Promise<MiningPool | undefined> {
+    const existingPool = this.miningPools.get(name);
     if (!existingPool) return undefined;
     
     const updatedPool: MiningPool = { ...existingPool, ...pool, updatedAt: new Date() };
-    this.miningPools.set(poolSlug, updatedPool);
+    this.miningPools.set(name, updatedPool);
     return updatedPool;
   }
 

@@ -61,8 +61,15 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(miningPools);
   }
   
+  // Legacy method - use getMiningPoolBySlug instead
   async getMiningPoolByName(name: string): Promise<MiningPool | undefined> {
     const [pool] = await db.select().from(miningPools).where(eq(miningPools.poolSlug, name));
+    return pool;
+  }
+  
+  // New method with better naming
+  async getMiningPoolBySlug(poolSlug: string): Promise<MiningPool | undefined> {
+    const [pool] = await db.select().from(miningPools).where(eq(miningPools.poolSlug, poolSlug));
     return pool;
   }
   
@@ -71,11 +78,11 @@ export class DatabaseStorage implements IStorage {
     return newPool;
   }
   
-  async updateMiningPool(name: string, pool: Partial<InsertMiningPool>): Promise<MiningPool | undefined> {
+  async updateMiningPool(poolSlug: string, pool: Partial<InsertMiningPool>): Promise<MiningPool | undefined> {
     const [updatedPool] = await db
       .update(miningPools)
       .set({ ...pool, updatedAt: new Date() })
-      .where(eq(miningPools.poolSlug, name))
+      .where(eq(miningPools.poolSlug, poolSlug))
       .returning();
     return updatedPool;
   }

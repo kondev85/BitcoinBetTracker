@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import MainLayout from "@/components/layout/MainLayout";
 import { 
@@ -342,10 +342,16 @@ function BettingOptionsTab() {
     queryFn: fetchMiningPools,
   });
   
-  const { data: bettingOptions, isLoading, refetch } = useQuery({
+  // Get betting option types
+  const { data: bettingOptionTypes, isLoading: loadingOptionTypes } = useQuery({
     queryKey: ['/api/betting-options'],
     queryFn: () => fetchBettingOptions(),
   });
+  
+  // We need to properly fetch actual bets per block
+  // For now, we'll use an empty array since the API endpoint for this isn't implemented yet
+  const bettingOptions: BettingOption[] = [];
+  const isLoading = loadingOptionTypes;
   
   const handleCreateOption = async () => {
     try {
@@ -546,7 +552,7 @@ function BettingOptionsTab() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {bettingOptions.map((option) => (
+                {bettingOptions.map((option: BettingOption) => (
                   <TableRow key={option.id}>
                     <TableCell>#{option.blockHeight}</TableCell>
                     <TableCell>{formatBetType(option.type)}</TableCell>
@@ -567,7 +573,9 @@ function BettingOptionsTab() {
                       />
                     </TableCell>
                     <TableCell className="font-mono text-xs">
-                      {option.paymentAddress.substring(0, 8)}...{option.paymentAddress.substring(option.paymentAddress.length - 8)}
+                      {option.paymentAddress && option.paymentAddress.length >= 16 ? 
+                        `${option.paymentAddress.substring(0, 8)}...${option.paymentAddress.substring(option.paymentAddress.length - 8)}` 
+                        : option.paymentAddress || 'N/A'}
                     </TableCell>
                     <TableCell>
                       <Button variant="outline" size="sm">Edit</Button>

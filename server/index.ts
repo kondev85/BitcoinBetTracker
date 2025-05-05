@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
-import { apiRouter, setRedisConnected } from "./apis";
+import { apiRouter, adminRouter, setRedisConnected } from "./apis";
 import { checkDbConnection, resetConnectionPool } from "./db";
 import { initRedis } from "./redis";
 import dotenv from 'dotenv';
@@ -46,6 +46,9 @@ app.use((req, res, next) => {
 
 // Register API routes
 app.use('/api', apiRouter);
+
+// Register Admin routes
+app.use('/api/admin', adminRouter);
 
 // Global error handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

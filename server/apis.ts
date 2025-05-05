@@ -7,9 +7,11 @@ import axios from 'axios';
 import { getRedisClient } from './redis';
 import { storage } from './storage';
 import { registerRoutes } from './routes';
+import { insertBlockMinerOddsSchema } from '@shared/schema';
 
-// Create the router
+// Create the routers
 const apiRouter = Router();
+const adminRouter = Router();
 
 // Flag to track Redis connection
 let redisConnected = false;
@@ -466,4 +468,104 @@ export const setRedisConnected = (isConnected: boolean) => {
   console.log('Redis connection status set to:', redisConnected ? 'Connected' : 'Not connected');
 };
 
-export { apiRouter };
+// Admin routes for publishing blocks
+adminRouter.post("/published-blocks", async (req, res) => {
+  try {
+    // Support both estimatedDate or estimatedTime (frontend uses estimatedDate)
+    const { height, estimatedDate, estimatedTime, timeThreshold, isActive, description, isSpecial } = req.body;
+    
+    // Use estimatedDate if provided, otherwise fall back to estimatedTime
+    const estimatedDateTime = estimatedDate || estimatedTime;
+    
+    if (!height || !estimatedDateTime) {
+      return res.status(400).json({ error: "Missing required fields: height and estimated date/time" });
+    }
+    
+    const existingBlock = await storage.getPublishedBlockByHeight(parseInt(height));
+    
+    if (existingBlock) {
+      return res.status(400).json({ error: "Block with this height already exists" });
+    }
+    
+    // Get the current blockchain height to calculate estimated time if needed
+    let currentBlockHeight;
+    try {
+      const blocksRes = await fetch('https://mempool.space/api/blocks/tip/height');
+      currentBlockHeight = parseInt(await blocksRes.text());
+    } catch (error) {
+      console.error('Failed to fetch current block height:', error);
+      // Default to a reasonable value if we can't get current height
+      currentBlockHeight = 895000;  
+    }
+    
+    // For estimating block time
+    const blockHeightDiff = parseInt(height) - currentBlockHeight;
+    const minutesPerBlock = 10; // Average Bitcoin block time
+    
+    // Calculate the estimated time if not explicitly provided
+    let estimatedTimeDate;
+    if (estimatedDateTime) {
+      estimatedTimeDate = new Date(estimatedDateTime);
+    } else {
+      // Auto-calculate based on current time + (block height difference * 10 minutes)
+      estimatedTimeDate = new Date();
+      estimatedTimeDate.setMinutes(estimatedTimeDate.getMinutes() + (blockHeightDiff * minutesPerBlock));
+    }
+    
+    const blockData = {
+      height: parseInt(height),
+      estimatedTime: estimatedTimeDate,
+      timeThreshold: timeThreshold || 10,
+      isActive: isActive !== undefined ? isActive : true,
+      description: description || null,
+      isSpecial: isSpecial || false
+    };
+    
+    console.log("Creating published block with data:", blockData);
+    const newBlock = await storage.createPublishedBlock(blockData);
+    res.status(201).json(newBlock);
+  } catch (error) {
+    console.error("Error creating published block:", error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    res.status(500).json({ error: "Failed to create published block" });
+  }
+});
+
+// Update a published block
+adminRouter.put("/published-blocks/:height", async (req, res) => {
+  try {
+    const height = parseInt(req.params.height);
+    const blockData = req.body;
+    
+    const updatedBlock = await storage.updatePublishedBlock(height, blockData);
+    
+    if (!updatedBlock) {
+      return res.status(404).json({ error: "Published block not found" });
+    }
+    
+    res.json(updatedBlock);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    res.status(500).json({ error: "Failed to update published block" });
+  }
+});
+
+// Block miner odds (mining pool-specific betting)
+adminRouter.post("/block-miner-odds", async (req, res) => {
+  try {
+    const oddsData = insertBlockMinerOddsSchema.parse(req.body);
+    const newOdds = await storage.createBlockMinerOdds(oddsData);
+    res.status(201).json(newOdds);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    res.status(500).json({ error: "Failed to create block miner odds" });
+  }
+});
+
+export { apiRouter, adminRouter };

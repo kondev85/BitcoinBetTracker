@@ -62,7 +62,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getMiningPoolByName(name: string): Promise<MiningPool | undefined> {
-    const [pool] = await db.select().from(miningPools).where(eq(miningPools.name, name));
+    const [pool] = await db.select().from(miningPools).where(eq(miningPools.poolSlug, name));
     return pool;
   }
   
@@ -75,7 +75,7 @@ export class DatabaseStorage implements IStorage {
     const [updatedPool] = await db
       .update(miningPools)
       .set({ ...pool, updatedAt: new Date() })
-      .where(eq(miningPools.name, name))
+      .where(eq(miningPools.poolSlug, name))
       .returning();
     return updatedPool;
   }

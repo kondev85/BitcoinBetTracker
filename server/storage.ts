@@ -191,7 +191,7 @@ export class MemStorage implements IStorage {
       hashrate1w: pool.hashrate1w || 0,
       updatedAt: new Date()
     };
-    this.miningPools.set(pool.name, newPool);
+    this.miningPools.set(pool.poolSlug, newPool);
     return newPool;
   }
   

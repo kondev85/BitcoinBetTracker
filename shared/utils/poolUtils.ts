@@ -48,6 +48,15 @@ export function normalizePoolSlug(slug: string | null): string {
     'btc-com': 'btccom',
     'btc com': 'btccom',
     
+    // F2Pool variations
+    'f2-pool': 'f2pool',
+    'f2 pool': 'f2pool',
+    
+    // ViaBTC variations
+    'via-btc': 'viabtc',
+    'via btc': 'viabtc',
+    'viabtc': 'viabtc',
+    
     // SEC variations
     'sec-pool': 'secpool',
     'sec pool': 'secpool',

@@ -489,13 +489,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Payment addresses
   app.post("/api/admin/payment-addresses", async (req, res) => {
     try {
+      console.log('Received payment address data:', JSON.stringify(req.body));
       const addressData = insertPaymentAddressSchema.parse(req.body);
+      console.log('Parsed payment address data:', JSON.stringify(addressData));
       const newAddress = await storage.createPaymentAddress(addressData);
+      console.log('Created payment address:', JSON.stringify(newAddress));
       res.status(201).json(newAddress);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error('Zod validation error for payment address:', error.errors);
         return res.status(400).json({ error: error.errors });
       }
+      console.error('Error creating payment address:', error);
       res.status(500).json({ error: "Failed to create payment address" });
     }
   });
@@ -572,16 +577,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const oddsData = req.body;
       
+      console.log('Received block miner odds data:', JSON.stringify(oddsData));
+      
       // Add validation for required fields
       if (!oddsData.blockNumber || !oddsData.poolSlug) {
+        console.log('Missing required fields:', { blockNumber: oddsData.blockNumber, poolSlug: oddsData.poolSlug });
         return res.status(400).json({ error: "Missing required fields: blockNumber and poolSlug" });
       }
       
       // Create block miner odds
+      console.log('Creating block miner odds with data:', JSON.stringify(oddsData));
       const newOdds = await storage.createBlockMinerOdds(oddsData);
+      console.log('Created block miner odds:', JSON.stringify(newOdds));
       res.status(201).json(newOdds);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error('Zod validation error:', error.errors);
         return res.status(400).json({ error: error.errors });
       }
       console.error('Error creating block miner odds:', error);

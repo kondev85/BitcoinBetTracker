@@ -500,9 +500,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/payment-addresses/:blockNumber/:betType/:outcome", async (req, res) => {
+  app.get("/api/admin/payment-addresses/:betId/:betType/:outcome", async (req, res) => {
     try {
-      const blockNumber = parseInt(req.params.blockNumber);
+      const betId = parseInt(req.params.betId);
       const betType = req.params.betType;
       const outcome = req.params.outcome;
       
@@ -520,7 +520,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid outcome for time bet type. Allowed values: under, over" });
       }
       
-      const addresses = await storage.getPaymentAddressesByBlockNumber(blockNumber, betType, outcome);
+      const addresses = await storage.getPaymentAddressesByBlockNumber(betId, betType, outcome);
       res.json(addresses);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch payment addresses" });

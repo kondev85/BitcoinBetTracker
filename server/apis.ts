@@ -621,4 +621,23 @@ adminRouter.post("/block-miner-odds", async (req, res) => {
   }
 });
 
+// Payment addresses
+adminRouter.post("/payment-addresses", async (req, res) => {
+  try {
+    console.log('Received payment address data:', JSON.stringify(req.body));
+    const addressData = insertPaymentAddressSchema.parse(req.body);
+    console.log('Parsed payment address data:', JSON.stringify(addressData));
+    const newAddress = await storage.createPaymentAddress(addressData);
+    console.log('Created payment address:', JSON.stringify(newAddress));
+    res.status(201).json(newAddress);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      console.error('Zod validation error for payment address:', error.errors);
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('Error creating payment address:', error);
+    res.status(500).json({ error: "Failed to create payment address" });
+  }
+});
+
 export { apiRouter, adminRouter };

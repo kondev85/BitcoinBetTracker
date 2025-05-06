@@ -393,40 +393,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Block miner odds (mining pool-specific betting)
-  app.post("/api/admin/block-miner-odds", async (req, res) => {
-    try {
-      const oddsData = insertBlockMinerOddsSchema.parse(req.body);
-      const newOdds = await storage.createBlockMinerOdds(oddsData);
-      res.status(201).json(newOdds);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create block miner odds" });
-    }
-  });
-
-  app.get("/api/admin/block-miner-odds/:blockNumber", async (req, res) => {
-    try {
-      const blockNumber = parseInt(req.params.blockNumber);
-      const odds = await storage.getBlockMinerOddsByBlockNumber(blockNumber);
-      res.json(odds);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch block miner odds" });
-    }
-  });
-
-  app.put("/api/admin/block-miner-odds/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const oddsData = req.body;
-      
-      const updatedOdds = await storage.updateBlockMinerOdds(id, oddsData);
-      
-      if (!updatedOdds) {
-        return res.status(404).json({ error: "Block miner odds not found" });
-      }
+  // Block miner odds admin endpoints - moved to server/apis.ts
+  // These admin routes are now handled by the adminRouter in server/apis.ts
       
       res.json(updatedOdds);
     } catch (error) {
@@ -572,52 +540,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Block Miner Odds endpoints
-  app.post("/api/block-miner-odds", async (req, res) => {
-    try {
-      const oddsData = req.body;
-      
-      console.log('Received block miner odds data:', JSON.stringify(oddsData));
-      
-      // Add validation for required fields
-      if (!oddsData.blockNumber || !oddsData.poolSlug) {
-        console.log('Missing required fields:', { blockNumber: oddsData.blockNumber, poolSlug: oddsData.poolSlug });
-        return res.status(400).json({ error: "Missing required fields: blockNumber and poolSlug" });
-      }
-      
-      // Create block miner odds
-      console.log('Creating block miner odds with data:', JSON.stringify(oddsData));
-      const newOdds = await storage.createBlockMinerOdds(oddsData);
-      console.log('Created block miner odds:', JSON.stringify(newOdds));
-      res.status(201).json(newOdds);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        console.error('Zod validation error:', error.errors);
-        return res.status(400).json({ error: error.errors });
-      }
-      console.error('Error creating block miner odds:', error);
-      res.status(500).json({ error: "Failed to create block miner odds" });
-    }
-  });
-  
-  // Get all block miner odds or odds for a specific block
-  app.get("/api/block-miner-odds", async (req, res) => {
-    try {
-      const blockNumber = req.query.blockNumber ? parseInt(req.query.blockNumber as string) : undefined;
-      
-      let odds;
-      if (blockNumber) {
-        odds = await storage.getBlockMinerOddsByBlockNumber(blockNumber);
-      } else {
-        odds = await storage.getAllBlockMinerOdds();
-      }
-      
-      res.json(odds);
-    } catch (error) {
-      console.error('Error fetching block miner odds:', error);
-      res.status(500).json({ error: "Failed to fetch block miner odds" });
-    }
-  });
+  // Block Miner Odds endpoints - moved to server/apis.ts
+  // These routes are now handled by the apiRouter in server/apis.ts
   
   // For backward compatibility - redirect betting options to block miner odds
   app.get("/api/betting-options", async (req, res) => {

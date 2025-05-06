@@ -7,7 +7,7 @@ import axios from 'axios';
 import { getRedisClient } from './redis';
 import { storage } from './storage';
 import { registerRoutes } from './routes';
-import { insertBlockMinerOddsSchema } from '@shared/schema';
+import { insertBlockMinerOddsSchema, insertPaymentAddressSchema } from '@shared/schema';
 
 // Create the routers
 const apiRouter = Router();

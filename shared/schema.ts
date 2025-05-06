@@ -73,7 +73,7 @@ export const reserveAddresses = pgTable("reserve_addresses", {
 // Payment addresses for cryptocurrency payments
 export const paymentAddresses = pgTable("payment_addresses", {
   id: serial("id").primaryKey(),
-  blockNumber: integer("block_number").notNull(),
+  betId: integer("bet_id").notNull(),
   poolSlug: text("pool_slug"), // For miner bets
   betType: text("bet_type").notNull(), // 'miner' or 'time'
   outcome: text("outcome").notNull(), // 'hit', 'no_hit', 'under', or 'over'
@@ -155,7 +155,7 @@ export const insertReserveAddressSchema = createInsertSchema(reserveAddresses).p
 });
 
 export const insertPaymentAddressSchema = createInsertSchema(paymentAddresses).pick({
-  blockNumber: true,
+  betId: true,
   poolSlug: true,
   betType: true,
   outcome: true,

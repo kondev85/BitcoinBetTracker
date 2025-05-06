@@ -391,7 +391,7 @@ function BettingOptionsTab() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            blockNumber: newOption.blockHeight,
+            betId: newOption.blockHeight,
             poolSlug: newOption.value,
             betType: "miner",
             outcome: isHitBet ? "hit" : "noHit", 
@@ -423,7 +423,7 @@ function BettingOptionsTab() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            blockNumber: newOption.blockHeight,
+            betId: newOption.blockHeight,
             betType: "time",
             outcome: isUnderBet ? "under" : "over", 
             currency: "BTC",

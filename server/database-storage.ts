@@ -248,7 +248,7 @@ export class DatabaseStorage implements IStorage {
       .from(paymentAddresses)
       .where(
         and(
-          eq(paymentAddresses.blockNumber, blockNumber),
+          eq(paymentAddresses.betId, blockNumber),
           eq(paymentAddresses.betType, betType),
           eq(paymentAddresses.outcome, outcome)
         )

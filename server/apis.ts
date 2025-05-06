@@ -621,6 +621,29 @@ adminRouter.post("/block-miner-odds", async (req, res) => {
   }
 });
 
+// Get block miner odds for a specific block
+apiRouter.get("/block-miner-odds/:blockNumber", async (req, res) => {
+  try {
+    const blockNumber = parseInt(req.params.blockNumber);
+    const odds = await storage.getBlockMinerOddsByBlockNumber(blockNumber);
+    res.json(odds);
+  } catch (error) {
+    console.error('Error fetching block miner odds:', error);
+    res.status(500).json({ error: "Failed to fetch block miner odds" });
+  }
+});
+
+// Get all block miner odds
+apiRouter.get("/block-miner-odds", async (req, res) => {
+  try {
+    const odds = await storage.getAllBlockMinerOdds();
+    res.json(odds);
+  } catch (error) {
+    console.error('Error fetching all block miner odds:', error);
+    res.status(500).json({ error: "Failed to fetch block miner odds" });
+  }
+});
+
 // Payment addresses
 adminRouter.post("/payment-addresses", async (req, res) => {
   try {

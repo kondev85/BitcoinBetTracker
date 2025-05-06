@@ -644,6 +644,21 @@ apiRouter.get("/block-miner-odds", async (req, res) => {
   }
 });
 
+// Add POST endpoint for block-miner-odds to apiRouter for frontend compatibility
+apiRouter.post("/block-miner-odds", async (req, res) => {
+  try {
+    const oddsData = insertBlockMinerOddsSchema.parse(req.body);
+    const newOdds = await storage.createBlockMinerOdds(oddsData);
+    res.status(201).json(newOdds);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('Error creating block miner odds:', error);
+    res.status(500).json({ error: "Failed to create block miner odds" });
+  }
+});
+
 // Payment addresses
 adminRouter.post("/payment-addresses", async (req, res) => {
   try {

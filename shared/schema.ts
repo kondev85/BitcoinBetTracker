@@ -76,9 +76,10 @@ export const paymentAddresses = pgTable("payment_addresses", {
   poolSlug: text("pool_slug"), // For miner bets
   betType: text("bet_type").notNull(), // 'miner' or 'time'
   outcome: text("outcome").notNull(), // 'hit', 'no_hit', 'under', or 'over'
-  currency: text("currency").notNull(), // 'BTC', 'ETH', 'USDC', 'LIGHTNING', 'LITECOIN', etc.
   odds: real("odds"), // The odds for this bet at the time of creation
-  address: text("address").notNull(),
+  address: text("address").notNull(), // Bitcoin address
+  ltcAddress: text("ltc_address"), // Litecoin address
+  usdcAddress: text("usdc_address"), // USDC address
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -159,9 +160,10 @@ export const insertPaymentAddressSchema = createInsertSchema(paymentAddresses).p
   poolSlug: true,
   betType: true,
   outcome: true,
-  currency: true,
   odds: true,
-  address: true
+  address: true,
+  ltcAddress: true,
+  usdcAddress: true
 });
 
 export const insertMiningPoolSchema = createInsertSchema(miningPools).pick({

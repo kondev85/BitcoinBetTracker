@@ -327,7 +327,9 @@ function BettingOptionsTab() {
     type: "miner",
     value: "",
     odds: 2.0,
-    paymentAddress: ""
+    paymentAddress: "",
+    ltcPaymentAddress: "",
+    usdcPaymentAddress: ""
   });
   
   const { toast } = useToast();
@@ -399,10 +401,11 @@ function BettingOptionsTab() {
             poolSlug: newOption.value,
             betType: "miner",
             outcome: isHitBet ? "hit" : "noHit", 
-            currency: "BTC",
             // Use the correct odds from the response for the selected bet type
             odds: isHitBet ? blockOddsData.hitOdds : blockOddsData.noHitOdds,
-            address: newOption.paymentAddress
+            address: newOption.paymentAddress,
+            ltcAddress: newOption.ltcPaymentAddress || null,
+            usdcAddress: newOption.usdcPaymentAddress || null
           }),
         });
       } else {
@@ -578,17 +581,45 @@ function BettingOptionsTab() {
               />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="payment-address">Payment Address</Label>
-              <Input 
-                id="payment-address" 
-                placeholder="Bitcoin payment address (e.g. bc1q...)"
-                value={newOption.paymentAddress}
-                onChange={(e) => setNewOption({...newOption, paymentAddress: e.target.value})}
-              />
-              <p className="text-xs text-muted-foreground">
-                This is the address where users will send their bets
-              </p>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="payment-address">BTC Payment Address</Label>
+                <Input 
+                  id="payment-address" 
+                  placeholder="Bitcoin payment address (e.g. bc1q...)"
+                  value={newOption.paymentAddress}
+                  onChange={(e) => setNewOption({...newOption, paymentAddress: e.target.value})}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Bitcoin address where users will send their bets
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="ltc-payment-address">LTC Payment Address (Optional)</Label>
+                <Input 
+                  id="ltc-payment-address" 
+                  placeholder="Litecoin payment address (e.g. L...)"
+                  value={newOption.ltcPaymentAddress || ''}
+                  onChange={(e) => setNewOption({...newOption, ltcPaymentAddress: e.target.value})}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Litecoin address for bet payments
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="usdc-payment-address">USDC Payment Address (Optional)</Label>
+                <Input 
+                  id="usdc-payment-address" 
+                  placeholder="USDC payment address"
+                  value={newOption.usdcPaymentAddress || ''}
+                  onChange={(e) => setNewOption({...newOption, usdcPaymentAddress: e.target.value})}
+                />
+                <p className="text-xs text-muted-foreground">
+                  USDC address for bet payments
+                </p>
+              </div>
             </div>
           </form>
         </CardContent>

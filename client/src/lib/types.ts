@@ -51,6 +51,8 @@ export interface BettingOption {
   value: string; // miner name or time threshold
   odds: number;
   paymentAddress: string;
+  ltcPaymentAddress?: string;
+  usdcPaymentAddress?: string;
 }
 
 export interface ReserveAddress {

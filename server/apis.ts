@@ -728,7 +728,8 @@ adminRouter.post("/payment-addresses", async (req, res) => {
     const existingAddresses = await storage.getPaymentAddressesByBlockNumber(
       addressData.betId,
       addressData.betType,
-      addressData.outcome
+      addressData.outcome,
+      addressData.betType === 'miner' ? addressData.poolSlug : undefined
     );
     
     if (existingAddresses && existingAddresses.length > 0) {

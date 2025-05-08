@@ -67,7 +67,7 @@ export interface IStorage {
   // Payment Addresses operations
   getAllPaymentAddresses(): Promise<PaymentAddress[]>;
   getPaymentAddressById(id: number): Promise<PaymentAddress | undefined>;
-  getPaymentAddressesByBlockNumber(blockNumber: number, betType: string, outcome: string): Promise<PaymentAddress[]>;
+  getPaymentAddressesByBlockNumber(blockNumber: number, betType: string, outcome: string, poolSlug?: string): Promise<PaymentAddress[]>;
   createPaymentAddress(address: InsertPaymentAddress): Promise<PaymentAddress>;
   updatePaymentAddress(id: number, address: Partial<InsertPaymentAddress>): Promise<PaymentAddress | undefined>;
 }
@@ -288,7 +288,6 @@ export class MemStorage implements IStorage {
       ...odds, 
       id, 
       createdAt: new Date(),
-      minerId: null, // DEPRECATED: Using poolSlug instead, but field is still required by type
       hitOdds: odds.hitOdds || 2.0,
       noHitOdds: odds.noHitOdds || 2.0
     };
@@ -379,12 +378,21 @@ export class MemStorage implements IStorage {
     return this.paymentAddresses.get(id);
   }
 
-  async getPaymentAddressesByBlockNumber(blockNumber: number, betType: string, outcome: string): Promise<PaymentAddress[]> {
-    return Array.from(this.paymentAddresses.values()).filter(address => 
-      address.blockNumber === blockNumber && 
-      address.betType === betType && 
-      address.outcome === outcome
-    );
+  async getPaymentAddressesByBlockNumber(blockNumber: number, betType: string, outcome: string, poolSlug?: string): Promise<PaymentAddress[]> {
+    return Array.from(this.paymentAddresses.values()).filter(address => {
+      // Base conditions that must match
+      const baseCondition = address.betId === blockNumber && 
+                           address.betType === betType && 
+                           address.outcome === outcome;
+      
+      // If poolSlug is provided and this is a miner bet, also check that condition
+      if (betType === 'miner' && poolSlug) {
+        return baseCondition && address.poolSlug === poolSlug;
+      }
+      
+      // Otherwise just check the base conditions
+      return baseCondition;
+    });
   }
 
   async createPaymentAddress(address: InsertPaymentAddress): Promise<PaymentAddress> {
@@ -393,7 +401,8 @@ export class MemStorage implements IStorage {
       ...address, 
       id, 
       createdAt: new Date(), 
-      poolSlug: address.poolSlug || null 
+      poolSlug: address.poolSlug || null,
+      odds: address.odds || null
     };
     this.paymentAddresses.set(id, newAddress);
     return newAddress;

@@ -45,7 +45,6 @@ export const publishedBlocks = pgTable("published_blocks", {
 export const blockMinerOdds = pgTable("block_miner_odds", {
   id: serial("id").primaryKey(),
   blockNumber: integer("block_number").notNull(),
-  minerId: integer("miner_id"), // DEPRECATED: Do not use this field. Use poolSlug instead.
   poolSlug: text("pool_slug").notNull(), // Mining pool identifier (e.g., "foundryusa", "antpool")
   hitOdds: real("hit_odds").notNull().default(2.0), // Odds for betting this pool will find the block
   noHitOdds: real("no_hit_odds").notNull().default(2.0), // Odds for betting this pool will NOT find the block

@@ -381,8 +381,8 @@ function BettingOptionsTab() {
           body: JSON.stringify({
             blockNumber: newOption.blockHeight,
             poolSlug: newOption.value,
-            hitOdds: isHitBet ? newOption.odds : 2.0,
-            noHitOdds: !isHitBet ? newOption.odds : 2.0
+            hitOdds: isHitBet ? newOption.odds : null,
+            noHitOdds: !isHitBet ? newOption.odds : null
           }),
         });
         

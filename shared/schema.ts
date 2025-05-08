@@ -46,8 +46,8 @@ export const blockMinerOdds = pgTable("block_miner_odds", {
   id: serial("id").primaryKey(),
   blockNumber: integer("block_number").notNull(),
   poolSlug: text("pool_slug").notNull(), // Mining pool identifier (e.g., "foundryusa", "antpool")
-  hitOdds: real("hit_odds").notNull().default(2.0), // Odds for betting this pool will find the block
-  noHitOdds: real("no_hit_odds").notNull().default(2.0), // Odds for betting this pool will NOT find the block
+  hitOdds: real("hit_odds"), // Odds for betting this pool will find the block, can be null if not applicable
+  noHitOdds: real("no_hit_odds"), // Odds for betting this pool will NOT find the block, can be null if not applicable
   createdAt: timestamp("created_at").defaultNow(), // When this betting option was created
 });
 

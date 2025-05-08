@@ -242,17 +242,23 @@ export class DatabaseStorage implements IStorage {
     return address;
   }
   
-  async getPaymentAddressesByBlockNumber(blockNumber: number, betType: string, outcome: string): Promise<PaymentAddress[]> {
+  async getPaymentAddressesByBlockNumber(blockNumber: number, betType: string, outcome: string, poolSlug?: string): Promise<PaymentAddress[]> {
+    // Base conditions
+    const conditions = [
+      eq(paymentAddresses.betId, blockNumber),
+      eq(paymentAddresses.betType, betType),
+      eq(paymentAddresses.outcome, outcome)
+    ];
+    
+    // Add poolSlug condition for miner bets if provided
+    if (betType === 'miner' && poolSlug) {
+      conditions.push(eq(paymentAddresses.poolSlug, poolSlug));
+    }
+    
     return db
       .select()
       .from(paymentAddresses)
-      .where(
-        and(
-          eq(paymentAddresses.betId, blockNumber),
-          eq(paymentAddresses.betType, betType),
-          eq(paymentAddresses.outcome, outcome)
-        )
-      );
+      .where(and(...conditions));
   }
   
   async createPaymentAddress(address: InsertPaymentAddress): Promise<PaymentAddress> {

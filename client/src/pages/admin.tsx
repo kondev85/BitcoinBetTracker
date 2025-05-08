@@ -412,7 +412,7 @@ function BettingOptionsTab() {
         // For time-based bets, use the time-bets endpoint
         const isUnderBet = newOption.type === "under_time";
         
-        // Time bets also store both under and over odds in a single record
+        // Time bets store odds for the selected bet type, and null for the non-selected type
         const response = await fetch("/api/admin/time-bets", {
           method: "POST",
           headers: {
@@ -420,8 +420,8 @@ function BettingOptionsTab() {
           },
           body: JSON.stringify({
             blockNumber: newOption.blockHeight,
-            underMinutesOdds: isUnderBet ? newOption.odds : 2.0,
-            overMinutesOdds: !isUnderBet ? newOption.odds : 2.0
+            underMinutesOdds: isUnderBet ? newOption.odds : null,
+            overMinutesOdds: !isUnderBet ? newOption.odds : null
           }),
         });
         

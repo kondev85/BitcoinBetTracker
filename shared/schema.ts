@@ -55,8 +55,8 @@ export const blockMinerOdds = pgTable("block_miner_odds", {
 export const timeBets = pgTable("time_bets", {
   id: serial("id").primaryKey(),
   blockNumber: integer("block_number").notNull(),
-  underMinutesOdds: real("under_minutes_odds").notNull().default(2.0), // Odds for under time threshold
-  overMinutesOdds: real("over_minutes_odds").notNull().default(2.0), // Odds for over time threshold
+  underMinutesOdds: real("under_minutes_odds"), // Odds for under time threshold, can be null if not applicable
+  overMinutesOdds: real("over_minutes_odds"), // Odds for over time threshold, can be null if not applicable
   createdAt: timestamp("created_at").defaultNow(), // When this betting option was created
 });
 

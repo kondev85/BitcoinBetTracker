@@ -438,10 +438,11 @@ function BettingOptionsTab() {
             betId: newOption.blockHeight,
             betType: "time",
             outcome: isUnderBet ? "under" : "over", 
-            currency: "BTC",
             // Use the correct odds from the response for the selected bet type
             odds: isUnderBet ? timeBetData.underMinutesOdds : timeBetData.overMinutesOdds,
-            address: newOption.paymentAddress
+            address: newOption.paymentAddress,
+            ltcAddress: newOption.ltcPaymentAddress || null,
+            usdcAddress: newOption.usdcPaymentAddress || null
           }),
         });
       }
@@ -451,11 +452,13 @@ function BettingOptionsTab() {
         description: `New betting option for block #${newOption.blockHeight} has been created`,
       });
       
-      // Reset value and payment address, keep other fields
+      // Reset value and payment addresses, keep other fields
       setNewOption({
         ...newOption,
         value: newOption.type === "miner" || newOption.type === "not_miner" ? "" : newOption.value,
-        paymentAddress: ""
+        paymentAddress: "",
+        ltcPaymentAddress: "",
+        usdcPaymentAddress: ""
       });
       
     } catch (error) {
@@ -646,7 +649,9 @@ function BettingOptionsTab() {
                   <TableHead>Type</TableHead>
                   <TableHead>Value</TableHead>
                   <TableHead>Current Odds</TableHead>
-                  <TableHead>Payment Address</TableHead>
+                  <TableHead>BTC Address</TableHead>
+                  <TableHead>LTC Address</TableHead>
+                  <TableHead>USDC Address</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -675,6 +680,16 @@ function BettingOptionsTab() {
                       {option.paymentAddress && option.paymentAddress.length >= 16 ? 
                         `${option.paymentAddress.substring(0, 8)}...${option.paymentAddress.substring(option.paymentAddress.length - 8)}` 
                         : option.paymentAddress || 'N/A'}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {option.ltcPaymentAddress && option.ltcPaymentAddress.length >= 16 ? 
+                        `${option.ltcPaymentAddress.substring(0, 8)}...${option.ltcPaymentAddress.substring(option.ltcPaymentAddress.length - 8)}` 
+                        : option.ltcPaymentAddress || 'N/A'}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {option.usdcPaymentAddress && option.usdcPaymentAddress.length >= 16 ? 
+                        `${option.usdcPaymentAddress.substring(0, 8)}...${option.usdcPaymentAddress.substring(option.usdcPaymentAddress.length - 8)}` 
+                        : option.usdcPaymentAddress || 'N/A'}
                     </TableCell>
                     <TableCell>
                       <Button variant="outline" size="sm">Edit</Button>

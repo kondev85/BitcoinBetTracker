@@ -407,7 +407,9 @@ export class MemStorage implements IStorage {
       id, 
       createdAt: new Date(), 
       poolSlug: address.poolSlug || null,
-      odds: address.odds || null
+      odds: address.odds || null,
+      ltcAddress: address.ltcAddress || null,
+      usdcAddress: address.usdcAddress || null
     };
     this.paymentAddresses.set(id, newAddress);
     return newAddress;

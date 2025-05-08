@@ -724,12 +724,18 @@ adminRouter.post("/payment-addresses", async (req, res) => {
     const addressData = insertPaymentAddressSchema.parse(req.body);
     console.log('Parsed payment address data:', JSON.stringify(addressData));
     
+    // Helper function to safely convert null to undefined
+    const nullToUndefined = <T>(value: T | null): T | undefined => {
+      return value === null ? undefined : value;
+    };
+
     // Check if a payment address already exists with these criteria
     const existingAddresses = await storage.getPaymentAddressesByBlockNumber(
       addressData.betId,
       addressData.betType,
       addressData.outcome,
-      addressData.betType === 'miner' ? addressData.poolSlug : undefined
+      addressData.betType === 'miner' ? nullToUndefined(addressData.poolSlug) : undefined,
+      addressData.betType === 'time' ? nullToUndefined(addressData.odds) : undefined
     );
     
     if (existingAddresses && existingAddresses.length > 0) {

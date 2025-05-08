@@ -242,7 +242,7 @@ export class DatabaseStorage implements IStorage {
     return address;
   }
   
-  async getPaymentAddressesByBlockNumber(blockNumber: number, betType: string, outcome: string, poolSlug?: string): Promise<PaymentAddress[]> {
+  async getPaymentAddressesByBlockNumber(blockNumber: number, betType: string, outcome: string, poolSlug?: string, odds?: number): Promise<PaymentAddress[]> {
     // Base conditions
     const conditions = [
       eq(paymentAddresses.betId, blockNumber),
@@ -253,6 +253,11 @@ export class DatabaseStorage implements IStorage {
     // Add poolSlug condition for miner bets if provided
     if (betType === 'miner' && poolSlug) {
       conditions.push(eq(paymentAddresses.poolSlug, poolSlug));
+    }
+    
+    // Add odds condition for time bets if provided
+    if (betType === 'time' && odds !== undefined) {
+      conditions.push(eq(paymentAddresses.odds, odds));
     }
     
     return db

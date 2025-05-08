@@ -67,7 +67,7 @@ export interface IStorage {
   // Payment Addresses operations
   getAllPaymentAddresses(): Promise<PaymentAddress[]>;
   getPaymentAddressById(id: number): Promise<PaymentAddress | undefined>;
-  getPaymentAddressesByBlockNumber(blockNumber: number, betType: string, outcome: string, poolSlug?: string): Promise<PaymentAddress[]>;
+  getPaymentAddressesByBlockNumber(blockNumber: number, betType: string, outcome: string, poolSlug?: string, odds?: number): Promise<PaymentAddress[]>;
   createPaymentAddress(address: InsertPaymentAddress): Promise<PaymentAddress>;
   updatePaymentAddress(id: number, address: Partial<InsertPaymentAddress>): Promise<PaymentAddress | undefined>;
 }
@@ -378,7 +378,7 @@ export class MemStorage implements IStorage {
     return this.paymentAddresses.get(id);
   }
 
-  async getPaymentAddressesByBlockNumber(blockNumber: number, betType: string, outcome: string, poolSlug?: string): Promise<PaymentAddress[]> {
+  async getPaymentAddressesByBlockNumber(blockNumber: number, betType: string, outcome: string, poolSlug?: string, odds?: number): Promise<PaymentAddress[]> {
     return Array.from(this.paymentAddresses.values()).filter(address => {
       // Base conditions that must match
       const baseCondition = address.betId === blockNumber && 
@@ -388,6 +388,11 @@ export class MemStorage implements IStorage {
       // If poolSlug is provided and this is a miner bet, also check that condition
       if (betType === 'miner' && poolSlug) {
         return baseCondition && address.poolSlug === poolSlug;
+      }
+      
+      // If odds is provided and this is a time bet, also check that condition
+      if (betType === 'time' && odds !== undefined && address.odds !== null) {
+        return baseCondition && address.odds === odds;
       }
       
       // Otherwise just check the base conditions

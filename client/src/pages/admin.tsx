@@ -396,6 +396,7 @@ function BettingOptionsTab() {
             betType: "miner",
             outcome: isHitBet ? "hit" : "noHit", 
             currency: "BTC",
+            odds: isHitBet ? newOption.odds : 2.0,
             address: newOption.paymentAddress
           }),
         });

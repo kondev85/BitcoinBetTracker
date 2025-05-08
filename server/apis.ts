@@ -723,6 +723,28 @@ adminRouter.post("/payment-addresses", async (req, res) => {
     console.log('Received payment address data:', JSON.stringify(req.body));
     const addressData = insertPaymentAddressSchema.parse(req.body);
     console.log('Parsed payment address data:', JSON.stringify(addressData));
+    
+    // Check if a payment address already exists with these criteria
+    const existingAddresses = await storage.getPaymentAddressesByBlockNumber(
+      addressData.betId,
+      addressData.betType,
+      addressData.outcome
+    );
+    
+    if (existingAddresses && existingAddresses.length > 0) {
+      // Update existing payment address
+      console.log(`Found existing payment address with ID ${existingAddresses[0].id}, updating it`);
+      const updatedAddress = await storage.updatePaymentAddress(existingAddresses[0].id, addressData);
+      
+      if (!updatedAddress) {
+        return res.status(404).json({ error: "Failed to update payment address" });
+      }
+      
+      console.log('Updated payment address:', JSON.stringify(updatedAddress));
+      return res.json(updatedAddress);
+    }
+    
+    // Create new payment address
     const newAddress = await storage.createPaymentAddress(addressData);
     console.log('Created payment address:', JSON.stringify(newAddress));
     res.status(201).json(newAddress);
@@ -731,8 +753,8 @@ adminRouter.post("/payment-addresses", async (req, res) => {
       console.error('Zod validation error for payment address:', error.errors);
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Error creating payment address:', error);
-    res.status(500).json({ error: "Failed to create payment address" });
+    console.error('Error managing payment address:', error);
+    res.status(500).json({ error: "Failed to create or update payment address" });
   }
 });
 

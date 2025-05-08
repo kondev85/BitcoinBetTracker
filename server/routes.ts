@@ -402,40 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/time-bets/:blockNumber", async (req, res) => {
-    try {
-      const blockNumber = parseInt(req.params.blockNumber);
-      const bets = await storage.getTimeBetByBlockNumber(blockNumber);
-      
-      if (!bets) {
-        return res.status(404).json({ error: "Time bet not found for this block" });
-      }
-      
-      res.json(bets);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch time bets" });
-    }
-  });
-
-  app.put("/api/admin/time-bets/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const betData = req.body;
-      
-      const updatedBet = await storage.updateTimeBet(id, betData);
-      
-      if (!updatedBet) {
-        return res.status(404).json({ error: "Time bet not found" });
-      }
-      
-      res.json(updatedBet);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update time bet" });
-    }
-  });
+    // Time bets endpoints have been moved to server/apis.ts
 
   // Block Miner Odds endpoints - moved to server/apis.ts
   // These routes are now handled by the apiRouter in server/apis.ts

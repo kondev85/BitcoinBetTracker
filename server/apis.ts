@@ -7,7 +7,7 @@ import axios from 'axios';
 import { getRedisClient } from './redis';
 import { storage } from './storage';
 import { registerRoutes } from './routes';
-import { insertBlockMinerOddsSchema, insertPaymentAddressSchema } from '@shared/schema';
+import { insertBlockMinerOddsSchema, insertPaymentAddressSchema, insertTimeBetsSchema } from '@shared/schema';
 
 // Create the routers
 const apiRouter = Router();
@@ -656,6 +656,64 @@ apiRouter.post("/block-miner-odds", async (req, res) => {
     }
     console.error('Error creating block miner odds:', error);
     res.status(500).json({ error: "Failed to create block miner odds" });
+  }
+});
+
+// Time bets
+adminRouter.post("/time-bets", async (req, res) => {
+  try {
+    console.log('Received time bet data:', JSON.stringify(req.body));
+    const betData = insertTimeBetsSchema.parse(req.body);
+    console.log('Parsed time bet data:', JSON.stringify(betData));
+    const newBet = await storage.createTimeBet(betData);
+    console.log('Created time bet:', JSON.stringify(newBet));
+    res.status(201).json(newBet);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      console.error('Zod validation error for time bet:', error.errors);
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('Error creating time bet:', error);
+    res.status(500).json({ error: "Failed to create time bet" });
+  }
+});
+
+// Time bet by block number
+adminRouter.get("/time-bets/:blockNumber", async (req, res) => {
+  try {
+    const blockNumber = parseInt(req.params.blockNumber);
+    const bet = await storage.getTimeBetByBlockNumber(blockNumber);
+    
+    if (!bet) {
+      return res.status(404).json({ error: "Time bet not found for this block" });
+    }
+    
+    res.json(bet);
+  } catch (error) {
+    console.error('Error fetching time bet:', error);
+    res.status(500).json({ error: "Failed to fetch time bet" });
+  }
+});
+
+// Update time bet
+adminRouter.put("/time-bets/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const betData = req.body;
+    
+    const updatedBet = await storage.updateTimeBet(id, betData);
+    
+    if (!updatedBet) {
+      return res.status(404).json({ error: "Time bet not found" });
+    }
+    
+    res.json(updatedBet);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('Error updating time bet:', error);
+    res.status(500).json({ error: "Failed to update time bet" });
   }
 });
 

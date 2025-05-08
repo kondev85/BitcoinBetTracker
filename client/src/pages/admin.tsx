@@ -427,6 +427,7 @@ function BettingOptionsTab() {
             betType: "time",
             outcome: isUnderBet ? "under" : "over", 
             currency: "BTC",
+            odds: newOption.odds,
             address: newOption.paymentAddress
           }),
         });

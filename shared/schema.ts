@@ -78,6 +78,7 @@ export const paymentAddresses = pgTable("payment_addresses", {
   betType: text("bet_type").notNull(), // 'miner' or 'time'
   outcome: text("outcome").notNull(), // 'hit', 'no_hit', 'under', or 'over'
   currency: text("currency").notNull(), // 'BTC', 'ETH', 'USDC', 'LIGHTNING', 'LITECOIN', etc.
+  odds: real("odds"), // The odds for this bet at the time of creation
   address: text("address").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -160,6 +161,7 @@ export const insertPaymentAddressSchema = createInsertSchema(paymentAddresses).p
   betType: true,
   outcome: true,
   currency: true,
+  odds: true,
   address: true
 });
 

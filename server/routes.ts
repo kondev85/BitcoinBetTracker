@@ -388,21 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Block miner odds admin endpoints - moved to server/apis.ts
   // These admin routes are now handled by the adminRouter in server/apis.ts
 
-  // Time-based bets
-  app.post("/api/admin/time-bets", async (req, res) => {
-    try {
-      const betData = insertTimeBetsSchema.parse(req.body);
-      const newBet = await storage.createTimeBet(betData);
-      res.status(201).json(newBet);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create time bet" });
-    }
-  });
-
-    // Time bets endpoints have been moved to server/apis.ts
+  // Time bets endpoints have been moved to server/apis.ts
 
   // Block Miner Odds endpoints - moved to server/apis.ts
   // These routes are now handled by the apiRouter in server/apis.ts

@@ -371,7 +371,7 @@ function BettingOptionsTab() {
         
         // When creating odds for a mining pool, we set both hit and no-hit odds 
         // in a single record since they're two sides of the same bet
-        await fetch("/api/block-miner-odds", {
+        const response = await fetch("/api/block-miner-odds", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -384,7 +384,11 @@ function BettingOptionsTab() {
           }),
         });
         
+        const blockOddsData = await response.json();
+        console.log("Created block-miner-odds:", blockOddsData);
+        
         // Now create a payment address for this bet
+        // Use the actual odds from the blockOddsData
         await fetch("/api/admin/payment-addresses", {
           method: "POST",
           headers: {
@@ -396,7 +400,8 @@ function BettingOptionsTab() {
             betType: "miner",
             outcome: isHitBet ? "hit" : "noHit", 
             currency: "BTC",
-            odds: isHitBet ? newOption.odds : 2.0,
+            // Use the correct odds from the response for the selected bet type
+            odds: isHitBet ? blockOddsData.hitOdds : blockOddsData.noHitOdds,
             address: newOption.paymentAddress
           }),
         });
@@ -405,7 +410,7 @@ function BettingOptionsTab() {
         const isUnderBet = newOption.type === "under_time";
         
         // Time bets also store both under and over odds in a single record
-        await fetch("/api/admin/time-bets", {
+        const response = await fetch("/api/admin/time-bets", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -416,6 +421,9 @@ function BettingOptionsTab() {
             overMinutesOdds: !isUnderBet ? newOption.odds : 2.0
           }),
         });
+        
+        const timeBetData = await response.json();
+        console.log("Created time bet:", timeBetData);
         
         // Create payment address for this time-based bet
         await fetch("/api/admin/payment-addresses", {
@@ -428,7 +436,8 @@ function BettingOptionsTab() {
             betType: "time",
             outcome: isUnderBet ? "under" : "over", 
             currency: "BTC",
-            odds: newOption.odds,
+            // Use the correct odds from the response for the selected bet type
+            odds: isUnderBet ? timeBetData.underMinutesOdds : timeBetData.overMinutesOdds,
             address: newOption.paymentAddress
           }),
         });

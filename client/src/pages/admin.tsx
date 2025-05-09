@@ -38,7 +38,10 @@ import {
   updatePublishedBlock,
   createBettingOption,
   updateBettingOption,
-  updateMiningPool
+  updateMiningPool,
+  fetchPaymentAddressesByBlock,
+  updatePaymentAddress,
+  PaymentAddress
 } from "@/lib/api";
 import { BettingOption, MiningPool, PublishedBlock } from "@/lib/types";
 
@@ -332,6 +335,9 @@ function BettingOptionsTab() {
     usdcPaymentAddress: ""
   });
   
+  // Add new state for managing payment addresses
+  const [selectedBlockForManage, setSelectedBlockForManage] = useState<number | null>(null);
+  
   const { toast } = useToast();
   
   const { data: publishedBlocks } = useQuery({
@@ -350,10 +356,17 @@ function BettingOptionsTab() {
     queryFn: () => fetchBettingOptions(),
   });
   
+  // Query to get payment addresses for the selected block
+  const { data: paymentAddresses, isLoading: loadingPaymentAddresses } = useQuery({
+    queryKey: [`/api/payment-addresses/${selectedBlockForManage}`],
+    queryFn: () => selectedBlockForManage ? fetchPaymentAddressesByBlock(selectedBlockForManage) : Promise.resolve([]),
+    enabled: !!selectedBlockForManage // Only run query if we have a selected block
+  });
+  
   // We need to properly fetch actual bets per block
   // For now, we'll use an empty array since the API endpoint for this isn't implemented yet
   const bettingOptions: BettingOption[] = [];
-  const isLoading = loadingOptionTypes;
+  const isLoading = loadingOptionTypes || loadingPaymentAddresses;
   
   const handleCreateOption = async () => {
     try {
@@ -491,8 +504,225 @@ function BettingOptionsTab() {
     }
   };
   
+  // Add state for editing
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editFormData, setEditFormData] = useState<Partial<PaymentAddress>>({});
+  
+  // Function to start editing a payment address
+  const startEditing = (address: PaymentAddress) => {
+    setEditingId(address.id);
+    setEditFormData({
+      odds: address.odds,
+      address: address.address,
+      ltcAddress: address.ltcAddress,
+      usdcAddress: address.usdcAddress
+    });
+  };
+  
+  // Function to cancel editing
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditFormData({});
+  };
+  
+  // Function to handle updating a payment address
+  const handleUpdatePaymentAddress = async (id: number) => {
+    try {
+      await updatePaymentAddress(id, editFormData);
+      
+      toast({
+        title: "Payment address updated",
+        description: "The payment address has been updated successfully."
+      });
+      
+      // Cancel editing mode
+      cancelEditing();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update payment address",
+        variant: "destructive"
+      });
+      console.error("Error updating payment address:", error);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Manage Betting Options</CardTitle>
+          <CardDescription>
+            View and edit payment addresses for published blocks
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="manage-block-select">Select Block</Label>
+              <Select 
+                value={selectedBlockForManage?.toString() || ''} 
+                onValueChange={(value) => setSelectedBlockForManage(parseInt(value))}
+              >
+                <SelectTrigger id="manage-block-select">
+                  <SelectValue placeholder="Select a block" />
+                </SelectTrigger>
+                <SelectContent>
+                  {publishedBlocks?.map((block) => (
+                    <SelectItem key={block.height} value={block.height.toString()}>
+                      Block #{block.height}
+                      {block.isSpecial && " (Special)"}
+                      {!block.isActive && " (Inactive)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {selectedBlockForManage && (
+              <div className="border rounded-md p-4">
+                <h3 className="text-lg font-medium mb-4">Payment Addresses for Block #{selectedBlockForManage}</h3>
+                
+                {isLoading ? (
+                  <div className="text-center p-4">Loading payment addresses...</div>
+                ) : paymentAddresses && paymentAddresses.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Bet Type</TableHead>
+                        <TableHead>Outcome</TableHead>
+                        <TableHead>Pool</TableHead>
+                        <TableHead>Odds</TableHead>
+                        <TableHead>BTC Address</TableHead>
+                        <TableHead>LTC Address</TableHead>
+                        <TableHead>USDC Address</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paymentAddresses?.map((address: PaymentAddress) => (
+                        <TableRow key={address.id}>
+                          <TableCell>
+                            {address.betType === 'miner' ? 'Mining Pool' : 'Time'}
+                          </TableCell>
+                          <TableCell>
+                            {address.betType === 'miner' ? 
+                              (address.outcome === 'hit' ? 'Will Mine' : 'Won\'t Mine') : 
+                              (address.outcome === 'under' ? 'Under Time' : 'Over Time')}
+                          </TableCell>
+                          <TableCell>
+                            {address.poolSlug || '-'}
+                          </TableCell>
+                          <TableCell>
+                            {editingId === address.id ? (
+                              <Input 
+                                type="number"
+                                step="0.01"
+                                min="1.01"
+                                value={editFormData.odds || ''}
+                                onChange={(e) => setEditFormData({
+                                  ...editFormData,
+                                  odds: e.target.value ? parseFloat(e.target.value) : null
+                                })}
+                                className="w-24"
+                              />
+                            ) : (
+                              address.odds || '-'
+                            )}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {editingId === address.id ? (
+                              <Input 
+                                value={editFormData.address || ''}
+                                onChange={(e) => setEditFormData({
+                                  ...editFormData,
+                                  address: e.target.value
+                                })}
+                                className="w-40"
+                              />
+                            ) : (
+                              address.address.length > 16 ? 
+                              `${address.address.substring(0, 8)}...${address.address.substring(address.address.length - 8)}` : 
+                              address.address
+                            )}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {editingId === address.id ? (
+                              <Input 
+                                value={editFormData.ltcAddress || ''}
+                                onChange={(e) => setEditFormData({
+                                  ...editFormData,
+                                  ltcAddress: e.target.value || null
+                                })}
+                                className="w-40"
+                                placeholder="LTC address (optional)"
+                              />
+                            ) : (
+                              address.ltcAddress && address.ltcAddress.length > 16 ? 
+                              `${address.ltcAddress.substring(0, 8)}...${address.ltcAddress.substring(address.ltcAddress.length - 8)}` : 
+                              (address.ltcAddress || '-')
+                            )}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {editingId === address.id ? (
+                              <Input 
+                                value={editFormData.usdcAddress || ''}
+                                onChange={(e) => setEditFormData({
+                                  ...editFormData,
+                                  usdcAddress: e.target.value || null
+                                })}
+                                className="w-40"
+                                placeholder="USDC address (optional)"
+                              />
+                            ) : (
+                              address.usdcAddress && address.usdcAddress.length > 16 ? 
+                              `${address.usdcAddress.substring(0, 8)}...${address.usdcAddress.substring(address.usdcAddress.length - 8)}` : 
+                              (address.usdcAddress || '-')
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {editingId === address.id ? (
+                              <div className="flex space-x-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleUpdatePaymentAddress(address.id)}
+                                >
+                                  Save
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={cancelEditing}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => startEditing(address)}
+                              >
+                                Edit
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center p-4 text-muted-foreground">
+                    No payment addresses found for this block
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+      
       <Card>
         <CardHeader>
           <CardTitle>Create New Betting Option</CardTitle>

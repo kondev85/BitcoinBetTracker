@@ -139,3 +139,31 @@ export const fetchMempoolMiningPools = async (period: TimePeriod = '1w'): Promis
   const res = await apiRequest('GET', `/api/mempool/mining-pools/${period}`);
   return res.json();
 };
+
+// Payment addresses API
+export interface PaymentAddress {
+  id: number;
+  betId: number;
+  poolSlug: string | null;
+  betType: string;
+  outcome: string;
+  odds: number | null;
+  address: string;
+  ltcAddress: string | null;
+  usdcAddress: string | null;
+  createdAt: string;
+}
+
+export const fetchPaymentAddressesByBlock = async (blockNumber: number): Promise<PaymentAddress[]> => {
+  const res = await apiRequest('GET', `/api/payment-addresses/${blockNumber}`);
+  return res.json();
+};
+
+export const updatePaymentAddress = async (id: number, data: Partial<PaymentAddress>): Promise<PaymentAddress> => {
+  const res = await apiRequest('PUT', `/api/admin/payment-addresses/${id}`, data);
+  
+  // Invalidate cache for both the specific address and for the block
+  queryClient.invalidateQueries({ queryKey: [`/api/payment-addresses/${data.betId}`] });
+  
+  return res.json();
+};

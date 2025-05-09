@@ -505,6 +505,46 @@ apiRouter.get('/mining-pools', async (req, res) => {
   }
 });
 
+// GET /api/payment-addresses/:blockNumber - Get all payment addresses for a specific block
+apiRouter.get('/payment-addresses/:blockNumber', async (req, res) => {
+  try {
+    const blockNumber = parseInt(req.params.blockNumber);
+    const addresses = await storage.getAllPaymentAddressesByBlockNumber(blockNumber);
+    res.json(addresses);
+  } catch (error) {
+    console.error('Error fetching all payment addresses:', error);
+    res.status(500).json({ error: "Failed to fetch payment addresses" });
+  }
+});
+
+// GET /api/payment-addresses/:blockNumber/:betType/:outcome - Get specific payment addresses
+apiRouter.get('/payment-addresses/:blockNumber/:betType/:outcome', async (req, res) => {
+  try {
+    const blockNumber = parseInt(req.params.blockNumber);
+    const betType = req.params.betType;
+    const outcome = req.params.outcome;
+    
+    // Validate betType
+    if (!['miner', 'time'].includes(betType)) {
+      return res.status(400).json({ error: "Invalid bet type. Allowed values: miner, time" });
+    }
+    
+    // Validate outcome based on betType
+    if (betType === 'miner' && !['hit', 'noHit'].includes(outcome)) {
+      return res.status(400).json({ error: "Invalid outcome for miner bet type. Allowed values: hit, noHit" });
+    }
+    
+    if (betType === 'time' && !['under', 'over'].includes(outcome)) {
+      return res.status(400).json({ error: "Invalid outcome for time bet type. Allowed values: under, over" });
+    }
+    
+    const addresses = await storage.getPaymentAddressesByBlockNumber(blockNumber, betType, outcome);
+    res.json(addresses);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch payment addresses" });
+  }
+});
+
 // GET /api/published-blocks - Get all published blocks
 apiRouter.get('/published-blocks', async (req, res) => {
   try {

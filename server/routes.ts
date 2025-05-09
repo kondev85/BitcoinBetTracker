@@ -248,54 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Betting options are now handled by the dedicated endpoint below
 
-  app.get("/api/reserve-addresses", async (req, res) => {
-    try {
-      const addresses = await storage.getAllReserveAddresses();
-      res.json(addresses);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch reserve addresses" });
-    }
-  });
-  
-  // Get all payment addresses for a specific block
-  app.get("/api/payment-addresses/:blockNumber", async (req, res) => {
-    try {
-      const blockNumber = parseInt(req.params.blockNumber);
-      const addresses = await storage.getAllPaymentAddressesByBlockNumber(blockNumber);
-      res.json(addresses);
-    } catch (error) {
-      console.error('Error fetching all payment addresses:', error);
-      res.status(500).json({ error: "Failed to fetch payment addresses" });
-    }
-  });
-  
-  // Get payment addresses for a specific block, bet type, and outcome
-  app.get("/api/payment-addresses/:blockNumber/:betType/:outcome", async (req, res) => {
-    try {
-      const blockNumber = parseInt(req.params.blockNumber);
-      const betType = req.params.betType;
-      const outcome = req.params.outcome;
-      
-      // Validate betType
-      if (!['miner', 'time'].includes(betType)) {
-        return res.status(400).json({ error: "Invalid bet type. Allowed values: miner, time" });
-      }
-      
-      // Validate outcome based on betType
-      if (betType === 'miner' && !['hit', 'noHit'].includes(outcome)) {
-        return res.status(400).json({ error: "Invalid outcome for miner bet type. Allowed values: hit, noHit" });
-      }
-      
-      if (betType === 'time' && !['under', 'over'].includes(outcome)) {
-        return res.status(400).json({ error: "Invalid outcome for time bet type. Allowed values: under, over" });
-      }
-      
-      const addresses = await storage.getPaymentAddressesByBlockNumber(blockNumber, betType, outcome);
-      res.json(addresses);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch payment addresses" });
-    }
-  });
+  // Note: Reserve addresses and payment addresses endpoints are now in the API router in apis.ts
   
   // Mempool.space API endpoints
   app.get("/api/mempool/mining-pools/:period?", async (req, res) => {

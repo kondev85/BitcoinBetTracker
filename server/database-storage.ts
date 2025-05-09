@@ -242,6 +242,14 @@ export class DatabaseStorage implements IStorage {
     return address;
   }
   
+  async getAllPaymentAddressesByBlockNumber(blockNumber: number): Promise<PaymentAddress[]> {
+    return db
+      .select()
+      .from(paymentAddresses)
+      .where(eq(paymentAddresses.betId, blockNumber))
+      .orderBy(paymentAddresses.betType, paymentAddresses.outcome);
+  }
+  
   async getPaymentAddressesByBlockNumber(blockNumber: number, betType: string, outcome: string, poolSlug?: string, odds?: number): Promise<PaymentAddress[]> {
     // Base conditions
     const conditions = [

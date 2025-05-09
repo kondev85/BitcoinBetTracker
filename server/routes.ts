@@ -257,6 +257,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get all payment addresses for a specific block
+  app.get("/api/payment-addresses/:blockNumber", async (req, res) => {
+    try {
+      const blockNumber = parseInt(req.params.blockNumber);
+      const addresses = await storage.getAllPaymentAddressesByBlockNumber(blockNumber);
+      res.json(addresses);
+    } catch (error) {
+      console.error('Error fetching all payment addresses:', error);
+      res.status(500).json({ error: "Failed to fetch payment addresses" });
+    }
+  });
+  
   // Get payment addresses for a specific block, bet type, and outcome
   app.get("/api/payment-addresses/:blockNumber/:betType/:outcome", async (req, res) => {
     try {

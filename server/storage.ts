@@ -67,6 +67,7 @@ export interface IStorage {
   // Payment Addresses operations
   getAllPaymentAddresses(): Promise<PaymentAddress[]>;
   getPaymentAddressById(id: number): Promise<PaymentAddress | undefined>;
+  getAllPaymentAddressesByBlockNumber(blockNumber: number): Promise<PaymentAddress[]>;
   getPaymentAddressesByBlockNumber(blockNumber: number, betType: string, outcome: string, poolSlug?: string, odds?: number): Promise<PaymentAddress[]>;
   createPaymentAddress(address: InsertPaymentAddress): Promise<PaymentAddress>;
   updatePaymentAddress(id: number, address: Partial<InsertPaymentAddress>): Promise<PaymentAddress | undefined>;
@@ -376,6 +377,18 @@ export class MemStorage implements IStorage {
 
   async getPaymentAddressById(id: number): Promise<PaymentAddress | undefined> {
     return this.paymentAddresses.get(id);
+  }
+  
+  async getAllPaymentAddressesByBlockNumber(blockNumber: number): Promise<PaymentAddress[]> {
+    return Array.from(this.paymentAddresses.values())
+      .filter(address => address.betId === blockNumber)
+      .sort((a, b) => {
+        // Sort by betType first, then by outcome
+        if (a.betType !== b.betType) {
+          return a.betType.localeCompare(b.betType);
+        }
+        return a.outcome.localeCompare(b.outcome);
+      });
   }
 
   async getPaymentAddressesByBlockNumber(blockNumber: number, betType: string, outcome: string, poolSlug?: string, odds?: number): Promise<PaymentAddress[]> {

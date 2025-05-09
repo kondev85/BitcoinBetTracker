@@ -718,6 +718,28 @@ adminRouter.put("/time-bets/:id", async (req, res) => {
 });
 
 // Payment addresses
+// Update a payment address by ID
+adminRouter.put("/payment-addresses/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const addressData = req.body;
+    
+    // Partial validation of update data (no need for full schema validation)
+    const updatedAddress = await storage.updatePaymentAddress(id, addressData);
+    
+    if (!updatedAddress) {
+      return res.status(404).json({ error: "Payment address not found" });
+    }
+    
+    console.log('Updated payment address:', JSON.stringify(updatedAddress));
+    res.json(updatedAddress);
+  } catch (error) {
+    console.error('Error updating payment address:', error);
+    res.status(500).json({ error: "Failed to update payment address" });
+  }
+});
+
+// Create a new payment address
 adminRouter.post("/payment-addresses", async (req, res) => {
   try {
     console.log('Received payment address data:', JSON.stringify(req.body));

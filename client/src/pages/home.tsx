@@ -8,7 +8,7 @@ import MiningPoolPieChartWithHashrate from "@/components/data-display/MiningPool
 import BlocksTable from "@/components/data-display/BlocksTable";
 import MiningStats from "@/components/data-display/MiningStats";
 import BettingCard from "@/components/data-display/BettingCard";
-import { fetchPublishedBlocks, fetchReserveAddresses, fetchPaymentAddressesByBlock } from "@/lib/api";
+import { fetchPublishedBlocks, fetchReserveAddresses, fetchPaymentAddressesByBlock, fetchMiningPools } from "@/lib/api";
 import { TimePeriod, BettingOption, PaymentAddress } from "@/lib/types";
 import { useState } from "react";
 
@@ -19,6 +19,17 @@ export default function Home() {
     queryKey: ['/api/published-blocks'],
     queryFn: () => fetchPublishedBlocks(true),
   });
+  
+  const { data: miningPools } = useQuery({
+    queryKey: ['/api/mining-pools'],
+    queryFn: fetchMiningPools,
+  });
+  
+  // Get pool colors for miner betting options
+  const getPoolColor = (poolName: string) => {
+    const pool = miningPools?.find(p => p.name === poolName);
+    return pool?.color || "#6B7280";
+  };
 
   // Find a special block to highlight (or just the first one)
   const featuredBlock = publishedBlocks?.find(block => block.isSpecial) || publishedBlocks?.[0];

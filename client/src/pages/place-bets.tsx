@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import BettingCard from "@/components/data-display/BettingCard";
-import { fetchPublishedBlocks, fetchBettingOptions, fetchMiningPools } from "@/lib/api";
+import { fetchPublishedBlocks, fetchMiningPools, fetchPaymentAddressesByBlock } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -21,11 +21,72 @@ export default function PlaceBets() {
     queryFn: fetchMiningPools,
   });
   
-  const { data: bettingOptions, isLoading: isLoadingOptions } = useQuery({
-    queryKey: ['/api/betting-options', selectedBlock],
-    queryFn: () => selectedBlock ? fetchBettingOptions(selectedBlock) : fetchBettingOptions(),
-    enabled: Boolean(selectedBlock) || !selectedBlock,
+  // Directly fetch payment addresses for the selected block and map to betting options
+  const { data: paymentAddresses, isLoading: isLoadingOptions } = useQuery({
+    queryKey: [`/api/payment-addresses/${selectedBlock}`],
+    queryFn: () => selectedBlock ? fetchPaymentAddressesByBlock(selectedBlock) : Promise.resolve([]),
+    enabled: !!selectedBlock,
   });
+  
+  // Import necessary types
+  type PaymentAddress = {
+    id: number;
+    betId: number;
+    poolSlug: string | null;
+    betType: string;
+    outcome: string;
+    odds: number | null;
+    address: string;
+    ltcAddress: string | null;
+    usdcAddress: string | null;
+    createdAt: string;
+  };
+  
+  type BettingOption = {
+    id: number;
+    blockHeight: number;
+    paymentAddress: string;
+    ltcPaymentAddress: string | null;
+    usdcPaymentAddress: string | null;
+    odds: number;
+    type: string;
+    value: string;
+  };
+  
+  // Map payment addresses to betting options
+  const bettingOptions = paymentAddresses?.map((address: PaymentAddress) => {
+    const option: BettingOption = {
+      id: address.id,
+      blockHeight: address.betId,
+      paymentAddress: address.address,
+      ltcPaymentAddress: address.ltcAddress,
+      usdcPaymentAddress: address.usdcAddress,
+      odds: address.odds || 1.0, // Default to 1.0 if odds are null
+      // Set type and value based on betType and outcome
+      type: '',
+      value: ''
+    };
+    
+    if (address.betType === 'miner') {
+      if (address.outcome === 'hit') {
+        option.type = 'miner';
+        option.value = address.poolSlug || '';
+      } else {
+        option.type = 'not_miner';
+        option.value = address.poolSlug || '';
+      }
+    } else if (address.betType === 'time') {
+      if (address.outcome === 'under') {
+        option.type = 'under_time';
+        option.value = '10'; // Default time threshold value
+      } else {
+        option.type = 'over_time';
+        option.value = '10'; // Default time threshold value
+      }
+    }
+    
+    return option;
+  }) || [];
   
   // Select the first block by default if none is selected
   if (!selectedBlock && publishedBlocks && publishedBlocks.length > 0) {

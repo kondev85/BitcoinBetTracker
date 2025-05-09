@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BettingOption, PaymentAddress } from "@/lib/types";
 
 export default function PlaceBets() {
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null);
@@ -28,30 +29,7 @@ export default function PlaceBets() {
     enabled: !!selectedBlock,
   });
   
-  // Import necessary types
-  type PaymentAddress = {
-    id: number;
-    betId: number;
-    poolSlug: string | null;
-    betType: string;
-    outcome: string;
-    odds: number | null;
-    address: string;
-    ltcAddress: string | null;
-    usdcAddress: string | null;
-    createdAt: string;
-  };
-  
-  type BettingOption = {
-    id: number;
-    blockHeight: number;
-    paymentAddress: string;
-    ltcPaymentAddress: string | null;
-    usdcPaymentAddress: string | null;
-    odds: number;
-    type: string;
-    value: string;
-  };
+  /* Using imported types from @/lib/types */
   
   // Map payment addresses to betting options
   const bettingOptions = paymentAddresses?.map((address: PaymentAddress) => {
@@ -59,8 +37,8 @@ export default function PlaceBets() {
       id: address.id,
       blockHeight: address.betId,
       paymentAddress: address.address,
-      ltcPaymentAddress: address.ltcAddress,
-      usdcPaymentAddress: address.usdcAddress,
+      ltcPaymentAddress: address.ltcAddress || undefined,
+      usdcPaymentAddress: address.usdcAddress || undefined,
       odds: address.odds || 1.0, // Default to 1.0 if odds are null
       // Set type and value based on betType and outcome
       type: '',

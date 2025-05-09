@@ -51,8 +51,8 @@ export interface BettingOption {
   value: string; // miner name or time threshold
   odds: number;
   paymentAddress: string;
-  ltcPaymentAddress?: string;
-  usdcPaymentAddress?: string;
+  ltcPaymentAddress: string | null;
+  usdcPaymentAddress: string | null;
 }
 
 export interface ReserveAddress {
@@ -75,3 +75,16 @@ export interface MiningPoolStat {
 }
 
 export type TimePeriod = '24h' | '3d' | '1w';
+
+export interface PaymentAddress {
+  id: number;
+  betId: number;
+  poolSlug: string | null;
+  betType: string;
+  outcome: string;
+  odds: number | null;
+  address: string;
+  ltcAddress: string | null;
+  usdcAddress: string | null;
+  createdAt: string;
+}

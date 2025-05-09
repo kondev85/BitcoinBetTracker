@@ -37,8 +37,8 @@ export default function PlaceBets() {
       id: address.id,
       blockHeight: address.betId,
       paymentAddress: address.address,
-      ltcPaymentAddress: address.ltcAddress || undefined,
-      usdcPaymentAddress: address.usdcAddress || undefined,
+      ltcPaymentAddress: address.ltcAddress,
+      usdcPaymentAddress: address.usdcAddress,
       odds: address.odds || 1.0, // Default to 1.0 if odds are null
       // Set type and value based on betType and outcome
       type: '',

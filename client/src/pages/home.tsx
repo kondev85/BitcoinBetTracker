@@ -8,8 +8,8 @@ import MiningPoolPieChartWithHashrate from "@/components/data-display/MiningPool
 import BlocksTable from "@/components/data-display/BlocksTable";
 import MiningStats from "@/components/data-display/MiningStats";
 import BettingCard from "@/components/data-display/BettingCard";
-import { fetchPublishedBlocks, fetchBettingOptions, fetchReserveAddresses } from "@/lib/api";
-import { TimePeriod } from "@/lib/types";
+import { fetchPublishedBlocks, fetchReserveAddresses, fetchPaymentAddressesByBlock } from "@/lib/api";
+import { TimePeriod, BettingOption, PaymentAddress } from "@/lib/types";
 import { useState } from "react";
 
 export default function Home() {
@@ -20,23 +20,55 @@ export default function Home() {
     queryFn: () => fetchPublishedBlocks(true),
   });
 
-  const { data: bettingOptions } = useQuery({
-    queryKey: ['/api/betting-options'],
-    queryFn: () => fetchBettingOptions(),
+  // Find a special block to highlight (or just the first one)
+  const featuredBlock = publishedBlocks?.find(block => block.isSpecial) || publishedBlocks?.[0];
+  
+  // Fetch payment addresses for the featured block
+  const { data: paymentAddresses } = useQuery({
+    queryKey: [`/api/payment-addresses/${featuredBlock?.height}`],
+    queryFn: () => featuredBlock ? fetchPaymentAddressesByBlock(featuredBlock.height) : Promise.resolve([]),
+    enabled: !!featuredBlock,
   });
-
+  
   const { data: reserveAddresses } = useQuery({
     queryKey: ['/api/reserve-addresses'],
     queryFn: fetchReserveAddresses,
   });
 
-  // Find a special block to highlight (or just the first one)
-  const featuredBlock = publishedBlocks?.find(block => block.isSpecial) || publishedBlocks?.[0];
-  
-  // Get betting options for the featured block
-  const featuredBlockOptions = featuredBlock 
-    ? bettingOptions?.filter(option => option.blockHeight === featuredBlock.height) || []
-    : [];
+  // Map payment addresses to betting options
+  const featuredBlockOptions = paymentAddresses?.map((address: PaymentAddress) => {
+    const option: BettingOption = {
+      id: address.id,
+      blockHeight: address.betId,
+      paymentAddress: address.address,
+      ltcPaymentAddress: address.ltcAddress,
+      usdcPaymentAddress: address.usdcAddress,
+      odds: address.odds || 1.0, // Default to 1.0 if odds are null
+      // Set type and value based on betType and outcome
+      type: '',
+      value: ''
+    };
+    
+    if (address.betType === 'miner') {
+      if (address.outcome === 'hit') {
+        option.type = 'miner';
+        option.value = address.poolSlug || '';
+      } else {
+        option.type = 'not_miner';
+        option.value = address.poolSlug || '';
+      }
+    } else if (address.betType === 'time') {
+      if (address.outcome === 'under') {
+        option.type = 'under_time';
+        option.value = '10'; // Default time threshold value
+      } else {
+        option.type = 'over_time';
+        option.value = '10'; // Default time threshold value
+      }
+    }
+    
+    return option;
+  }) || [];
 
   return (
     <MainLayout>

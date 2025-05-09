@@ -357,11 +357,12 @@ function BettingOptionsTab() {
   });
   
   // Query to get payment addresses for the selected block
-  const { data: paymentAddresses, isLoading: loadingPaymentAddresses } = useQuery({
+  const { data: paymentAddresses = [], isLoading: loadingPaymentAddresses, refetch: refetchPaymentAddresses } = useQuery({
     queryKey: [`/api/payment-addresses/${selectedBlockForManage}`],
     queryFn: () => selectedBlockForManage ? fetchPaymentAddressesByBlock(selectedBlockForManage) : Promise.resolve([]),
-    enabled: !!selectedBlockForManage // Only run query if we have a selected block
-  });
+    enabled: !!selectedBlockForManage, // Only run query if we have a selected block
+    staleTime: 0 // Always fetch fresh data
+  } as any);
   
   // We need to properly fetch actual bets per block
   // For now, we'll use an empty array since the API endpoint for this isn't implemented yet
@@ -529,6 +530,11 @@ function BettingOptionsTab() {
   const handleUpdatePaymentAddress = async (id: number) => {
     try {
       await updatePaymentAddress(id, editFormData);
+      
+      // Refetch the payment addresses to show the updated data
+      if (refetchPaymentAddresses) {
+        await refetchPaymentAddresses();
+      }
       
       toast({
         title: "Payment address updated",

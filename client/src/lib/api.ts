@@ -54,9 +54,15 @@ export const fetchPublishedBlockByHeight = async (height: number): Promise<Publi
 
 // Betting Options API
 export const fetchBettingOptions = async (blockHeight?: number): Promise<BettingOption[]> => {
-  const url = blockHeight ? `/api/betting-options?blockHeight=${blockHeight}` : '/api/betting-options';
-  const res = await apiRequest('GET', url);
-  return res.json();
+  if (blockHeight) {
+    // Use the new endpoint for specific block betting options
+    const res = await apiRequest('GET', `/api/block-betting-options/${blockHeight}`);
+    return res.json();
+  } else {
+    // For general betting option types (no block specified)
+    const res = await apiRequest('GET', '/api/betting-options');
+    return res.json();
+  }
 };
 
 // Reserve Addresses API

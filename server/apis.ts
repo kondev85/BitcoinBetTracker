@@ -517,6 +517,54 @@ apiRouter.get('/payment-addresses/:blockNumber', async (req, res) => {
   }
 });
 
+// GET /api/block-betting-options/:blockNumber - Get payment addresses formatted as betting options
+apiRouter.get('/block-betting-options/:blockNumber', async (req, res) => {
+  try {
+    const blockNumber = parseInt(req.params.blockNumber);
+    const addresses = await storage.getAllPaymentAddressesByBlockNumber(blockNumber);
+    
+    // Format the payment addresses into the BettingOption format
+    const bettingOptions = addresses.map(address => {
+      const option = {
+        id: address.id,
+        blockHeight: address.betId,
+        paymentAddress: address.address,
+        ltcPaymentAddress: address.ltcAddress,
+        usdcPaymentAddress: address.usdcAddress,
+        odds: address.odds || 1.0, // Default to 1.0 if odds are null
+        // Set type and value based on betType and outcome
+        type: '',
+        value: ''
+      };
+      
+      if (address.betType === 'miner') {
+        if (address.outcome === 'hit') {
+          option.type = 'miner';
+          option.value = address.poolSlug || '';
+        } else {
+          option.type = 'not_miner';
+          option.value = address.poolSlug || '';
+        }
+      } else if (address.betType === 'time') {
+        if (address.outcome === 'under') {
+          option.type = 'under_time';
+          option.value = '10'; // Default time threshold value
+        } else {
+          option.type = 'over_time';
+          option.value = '10'; // Default time threshold value
+        }
+      }
+      
+      return option;
+    });
+    
+    res.json(bettingOptions);
+  } catch (error) {
+    console.error('Error creating betting options from payment addresses:', error);
+    res.status(500).json({ error: "Failed to fetch betting options" });
+  }
+});
+
 // GET /api/payment-addresses/:blockNumber/:betType/:outcome - Get specific payment addresses
 apiRouter.get('/payment-addresses/:blockNumber/:betType/:outcome', async (req, res) => {
   try {

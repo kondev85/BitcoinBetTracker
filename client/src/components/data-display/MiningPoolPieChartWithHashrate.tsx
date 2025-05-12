@@ -86,20 +86,20 @@ export default function MiningPoolPieChartWithHashrate({
     }
   });
   
-  // Add "Others" category if we grouped any pools
+  // Add "Other" category if we grouped any pools
   if (othersValue > 0) {
     data.push({
-      name: `Others (${othersCount} pools)`,
+      name: `Other (${othersCount} pools)`,
       value: othersValue,
-      color: '#71717A' // Gray color for "Others"
+      color: '#71717A' // Gray color for "Other"
     });
   }
   
-  // Re-sort to ensure "Others" is displayed at the end
+  // Re-sort to ensure "Other" is displayed at the end
   data = data.sort((a, b) => {
-    // Move "Others" to the end
-    if (a.name.includes('Others')) return 1;
-    if (b.name.includes('Others')) return -1;
+    // Move "Other" to the end
+    if (a.name.includes('Other')) return 1;
+    if (b.name.includes('Other')) return -1;
     // Otherwise sort by value (largest first)
     return b.value - a.value;
   });
@@ -118,8 +118,8 @@ export default function MiningPoolPieChartWithHashrate({
       const data = payload[0].payload;
       const percentage = ((data.value / totalHashrate) * 100).toFixed(2);
       
-      // Check if this is the "Others" category
-      if (data.name.includes('Others')) {
+      // Check if this is the "Other" category
+      if (data.name.includes('Other')) {
         // Create a 2-column layout for small pools
         const leftColumnPools = smallPools.filter((_, i) => i % 2 === 0);
         const rightColumnPools = smallPools.filter((_, i) => i % 2 === 1);
@@ -282,8 +282,8 @@ export default function MiningPoolPieChartWithHashrate({
                     innerRadius={50} // Adding inner radius for donut effect
                     dataKey="value"
                     label={({ name, percent }) => {
-                      // For the "Others" category, just show percentage
-                      if (name.includes('Others')) {
+                      // For the "Other" category, just show percentage
+                      if (name.includes('Other')) {
                         return `${(percent * 100).toFixed(1)}%`;
                       }
                       // For main pools, show name and percentage

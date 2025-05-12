@@ -55,9 +55,14 @@ export default function MiningPoolPieChartWithHashrate({
   
   // Extract pools data and network stats from the API response
   const poolsData = propData || (hashrateData?.pools || []);
-  const networkStats = hashrateData?.networkStats || { lastEstimatedHashrate: 0, blockCount: 0 };
+  const networkStats = hashrateData?.networkStats || { 
+    lastEstimatedHashrate: 0, 
+    lastEstimatedHashrate3d: 0,
+    lastEstimatedHashrate1w: 0,
+    blockCount: 0 
+  } as NetworkStats;
   
-  // Group all but top 3 pools into an "Others" category as requested
+  // Group all but top 3 pools into an "Other" category as requested
   // This matches the business logic for the rest of the app for betting
   const MAX_INDIVIDUAL_POOLS = 3; // Only show top 3 pools individually
   

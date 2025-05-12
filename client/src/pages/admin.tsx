@@ -362,7 +362,7 @@ function BettingOptionsTab() {
     queryFn: () => selectedBlockForManage ? fetchPaymentAddressesByBlock(selectedBlockForManage) : Promise.resolve([]),
     enabled: !!selectedBlockForManage, // Only run query if we have a selected block
     staleTime: 0 // Always fetch fresh data
-  } as any);
+  });
   
   // We need to properly fetch actual bets per block
   // For now, we'll use an empty array since the API endpoint for this isn't implemented yet
@@ -589,7 +589,7 @@ function BettingOptionsTab() {
               <div className="border rounded-md p-4">
                 <h3 className="text-lg font-medium mb-4">Payment Addresses for Block #{selectedBlockForManage}</h3>
                 
-                {isLoading ? (
+                {loadingPaymentAddresses ? (
                   <div className="text-center p-4">Loading payment addresses...</div>
                 ) : paymentAddresses && paymentAddresses.length > 0 ? (
                   <Table>
@@ -606,7 +606,7 @@ function BettingOptionsTab() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paymentAddresses?.map((address: PaymentAddress) => (
+                      {paymentAddresses.map((address: PaymentAddress) => (
                         <TableRow key={address.id}>
                           <TableCell>
                             {address.betType === 'miner' ? 'Mining Pool' : 'Time'}

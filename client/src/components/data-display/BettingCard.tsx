@@ -249,8 +249,14 @@ export default function BettingCard({ option, miningPoolColor = "#6B7280" }: Bet
 function getBetTitle(option: BettingOption): string {
   switch (option.type) {
     case 'miner':
+      if (option.value.toLowerCase() === 'other') {
+        return `Other Will Mine`;
+      }
       return `${option.value} Will Mine`;
     case 'not_miner':
+      if (option.value.toLowerCase() === 'other') {
+        return `Other Won't Mine`;
+      }
       return `${option.value} Won't Mine`;
     case 'under_time':
       return `Block Time Under ${option.value}min`;
@@ -264,8 +270,14 @@ function getBetTitle(option: BettingOption): string {
 function getBetDescription(option: BettingOption): string {
   switch (option.type) {
     case 'miner':
+      if (option.value.toLowerCase() === 'other') {
+        return `Bet that a mining pool different than Foundry USA, AntPool and ViaBTC will mine block #${option.blockHeight}.`;
+      }
       return `Bet that ${option.value} will mine block #${option.blockHeight}.`;
     case 'not_miner':
+      if (option.value.toLowerCase() === 'other') {
+        return `Bet that a mining pool different than Foundry USA, AntPool and ViaBTC will NOT mine block #${option.blockHeight}.`;
+      }
       return `Bet that ${option.value} will NOT mine block #${option.blockHeight}.`;
     case 'under_time':
       return `Bet that block #${option.blockHeight} will be mined in less than ${option.value} minutes after the previous block.`;

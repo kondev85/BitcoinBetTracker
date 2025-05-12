@@ -394,7 +394,7 @@ function BettingOptionsTab() {
           },
           body: JSON.stringify({
             blockNumber: newOption.blockHeight,
-            poolSlug: newOption.value,
+            poolSlug: newOption.value === 'others' ? 'other' : newOption.value,
             hitOdds: isHitBet ? newOption.odds : null,
             noHitOdds: !isHitBet ? newOption.odds : null
           }),
@@ -412,7 +412,7 @@ function BettingOptionsTab() {
           },
           body: JSON.stringify({
             betId: newOption.blockHeight,
-            poolSlug: newOption.value,
+            poolSlug: newOption.value === 'others' ? 'other' : newOption.value,
             betType: "miner",
             outcome: isHitBet ? "hit" : "noHit", 
             // Use the correct odds from the response for the selected bet type
@@ -792,7 +792,7 @@ function BettingOptionsTab() {
                   <SelectContent>
                     {miningPools?.map((pool) => (
                       <SelectItem key={pool.poolSlug || pool.name} value={pool.poolSlug || pool.name || ''}>
-                        {pool.displayName}
+                        {pool.displayName === 'Others' ? 'Other' : pool.displayName}
                       </SelectItem>
                     ))}
                   </SelectContent>

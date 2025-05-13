@@ -13,6 +13,7 @@ import {
 import { z } from "zod";
 import { getRedisClient } from "./redis";
 import axios from "axios";
+import { createAutoBettingOptions } from "./utils";
 
 // Check database connection and verify existing tables
 async function initializeData() {

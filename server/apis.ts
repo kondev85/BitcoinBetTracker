@@ -9,6 +9,7 @@ import { updateMiningPools } from '../scripts/update-mining-pools';
 import { storage } from './storage';
 import { registerRoutes } from './routes';
 import { insertBlockMinerOddsSchema, insertPaymentAddressSchema, insertTimeBetsSchema } from '@shared/schema';
+import { createAutoBettingOptions } from './utils';
 
 // Create the routers
 const apiRouter = Router();

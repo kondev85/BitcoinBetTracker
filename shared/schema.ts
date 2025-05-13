@@ -98,10 +98,16 @@ export const miningPools = pgTable("mining_pools", {
 // Network hashrate data
 export const networkHashrate = pgTable("network_hashrate", {
   id: serial("id").primaryKey(),
-  period: text("period").notNull().unique(), // '24h', '3d', '1w'
-  hashrate: real("hashrate").notNull(), // In hashes per second
+  period: text("period").notNull(), // '24h', '3d', '1w'
+  hashrate: real("hashrate").notNull(), // In hashes per second (deprecated, use hashrate24h instead)
+  hashrate24h: real("hashrate_24h"), // Hashrate for 24h period in hashes per second
+  hashrate3d: real("hashrate_3d"), // Hashrate for 3d period in hashes per second
+  hashrate1w: real("hashrate_1w"), // Hashrate for 1w period in hashes per second
   updatedAt: timestamp("updated_at").defaultNow(),
+  blockCount: integer("block_count"), // Total blocks for the time period
 });
+
+// Note: Removed unique constraint from period to allow storing historical data
 
 // Schemas for data insertion
 export const insertMinerSchema = createInsertSchema(miners).pick({

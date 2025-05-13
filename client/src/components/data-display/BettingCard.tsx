@@ -5,8 +5,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BettingOption } from "@/lib/types";
-import { Clock, User, Bitcoin, Coins } from "lucide-react";
+import { Clock, User, Bitcoin, Coins, Copy, Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 
 interface BettingCardProps {
   option: BettingOption;
@@ -17,24 +18,43 @@ export default function BettingCard({ option, miningPoolColor = "#6B7280" }: Bet
   const [showBetDialog, setShowBetDialog] = useState(false);
   const [betAmount, setBetAmount] = useState("");
   const [activeCurrency, setActiveCurrency] = useState<"btc" | "ltc" | "usdc">("btc");
+  const [copySuccess, setCopySuccess] = useState<boolean>(false);
+  const { toast } = useToast();
 
-  const handlePlaceBet = () => {
-    // In a real app, this would handle the betting logic
-    setShowBetDialog(false);
-    
-    // Determine which address and currency to use based on active tab
-    let currencyName = "Bitcoin (BTC)";
-    let paymentAddress = option.paymentAddress;
-    
+  // Function to get the current payment address based on selected currency
+  const getCurrentPaymentAddress = (): string => {
     if (activeCurrency === "ltc" && option.ltcPaymentAddress) {
-      currencyName = "Litecoin (LTC)";
-      paymentAddress = option.ltcPaymentAddress;
+      return option.ltcPaymentAddress;
     } else if (activeCurrency === "usdc" && option.usdcPaymentAddress) {
-      currencyName = "USD Coin (USDC)";
-      paymentAddress = option.usdcPaymentAddress;
+      return option.usdcPaymentAddress;
     }
+    return option.paymentAddress;
+  };
+
+  // Function to copy address to clipboard
+  const handleCopyAddress = async () => {
+    const paymentAddress = getCurrentPaymentAddress();
     
-    alert(`Bet placed! Please send ${betAmount} ${activeCurrency.toUpperCase()} to ${paymentAddress}`);
+    try {
+      await navigator.clipboard.writeText(paymentAddress);
+      setCopySuccess(true);
+      
+      toast({
+        title: "Address copied",
+        description: "Payment address has been copied to your clipboard",
+      });
+      
+      // Reset the copy success indicator after a short delay
+      setTimeout(() => {
+        setCopySuccess(false);
+      }, 2000);
+    } catch (err) {
+      toast({
+        title: "Copy failed",
+        description: "Failed to copy address. Please try again or copy manually.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -153,8 +173,22 @@ export default function BettingCard({ option, miningPoolColor = "#6B7280" }: Bet
               </div>
               <div className="space-y-2">
                 <Label>Bitcoin Payment Address</Label>
-                <div className="p-2 bg-background rounded-md overflow-x-auto font-mono text-sm break-all">
-                  {option.paymentAddress}
+                <div className="p-2 bg-background rounded-md overflow-x-auto font-mono text-sm break-all flex items-center justify-between">
+                  <span className="overflow-x-auto mr-2">{option.paymentAddress}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex-shrink-0" 
+                    onClick={() => {
+                      navigator.clipboard.writeText(option.paymentAddress);
+                      toast({
+                        title: "BTC Address copied",
+                        description: "Payment address has been copied to your clipboard",
+                      });
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </TabsContent>
@@ -183,8 +217,22 @@ export default function BettingCard({ option, miningPoolColor = "#6B7280" }: Bet
                   </div>
                   <div className="space-y-2">
                     <Label>Litecoin Payment Address</Label>
-                    <div className="p-2 bg-background rounded-md overflow-x-auto font-mono text-sm break-all">
-                      {option.ltcPaymentAddress}
+                    <div className="p-2 bg-background rounded-md overflow-x-auto font-mono text-sm break-all flex items-center justify-between">
+                      <span className="overflow-x-auto mr-2">{option.ltcPaymentAddress}</span>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="flex-shrink-0" 
+                        onClick={() => {
+                          navigator.clipboard.writeText(option.ltcPaymentAddress || '');
+                          toast({
+                            title: "LTC Address copied",
+                            description: "Payment address has been copied to your clipboard",
+                          });
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </>
@@ -237,8 +285,23 @@ export default function BettingCard({ option, miningPoolColor = "#6B7280" }: Bet
           </p>
           
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setShowBetDialog(false)}>Cancel</Button>
-            <Button onClick={handlePlaceBet}>Place Bet</Button>
+            <Button variant="outline" onClick={() => setShowBetDialog(false)}>Close</Button>
+            <Button 
+              onClick={handleCopyAddress} 
+              className="gap-2"
+            >
+              {copySuccess ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4" />
+                  Copy Address
+                </>
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

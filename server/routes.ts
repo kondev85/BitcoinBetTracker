@@ -409,7 +409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Published blocks endpoints - blocks that are available for betting
   app.post("/api/published-blocks", async (req, res) => {
     try {
-      const { height, estimatedTime, timeThreshold = 10, isActive = true } = req.body;
+      const { height, estimatedTime, timeThreshold = 10, isActive = true, description = null, isSpecial = false } = req.body;
       
       // Add validation for required fields
       if (!height) {
@@ -426,16 +426,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         height: parseInt(height),
         estimatedTime: new Date(estimatedTime),
         timeThreshold,
-        isActive
+        isActive,
+        description,
+        isSpecial
       };
       
       const newBlock = await storage.createPublishedBlock(blockData);
+      
+      // Auto-create betting options based on user requirements
+      await createAutoBettingOptions(parseInt(height), timeThreshold);
+      
       res.status(201).json(newBlock);
     } catch (error) {
       console.error('Error creating published block:', error);
       res.status(500).json({ error: "Failed to create published block" });
     }
   });
+  
+  // We now use the shared function from utils.ts instead of defining it here
   
   // Update a published block
   app.patch("/api/published-blocks/:height", async (req, res) => {

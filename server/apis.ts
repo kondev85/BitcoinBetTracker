@@ -680,6 +680,17 @@ adminRouter.post("/published-blocks", async (req, res) => {
     
     console.log("Creating published block with data:", blockData);
     const newBlock = await storage.createPublishedBlock(blockData);
+    
+    // Now create automatic betting options for this block
+    try {
+      // We call the function directly from the routes.ts file since it's already imported at the top
+      await createAutoBettingOptions(parseInt(height), blockData.timeThreshold);
+      console.log(`Successfully created betting options for block ${height}`);
+    } catch (bettingError) {
+      console.error(`Error creating betting options for block ${height}:`, bettingError);
+      // We don't throw this error as we still want to return the created block
+    }
+    
     res.status(201).json(newBlock);
   } catch (error) {
     console.error("Error creating published block:", error);

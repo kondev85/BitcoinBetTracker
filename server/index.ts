@@ -51,6 +51,9 @@ app.use('/api', apiRouter);
 // Register Admin routes
 app.use('/api/admin', adminRouter);
 
+// Register Network Hashrate routes
+app.use('/api/network-hashrate', networkHashrateRouter);
+
 // Global error handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   const status = err.status || err.statusCode || 500;

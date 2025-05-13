@@ -55,9 +55,22 @@ function getColorForPool(poolName: string): string {
   return poolColors[poolName] || `#${Math.floor(Math.random()*16777215).toString(16)}`;
 }
 
-// Helper function to convert pool name to slug
+// Helper function to convert pool name to standardized slug
 function poolNameToSlug(name: string): string {
-  return name.toLowerCase().replace(/\s+/g, '');
+  // First, standardize the name to handle inconsistencies
+  const standardizedName = standardizePoolName(name);
+  
+  // Special cases for slug standardization
+  if (standardizedName.toLowerCase() === 'braiins pool') return 'braiinspool';
+  if (standardizedName.toLowerCase() === 'btc.com') return 'btccom';
+  if (standardizedName.toLowerCase() === 'mara pool') return 'marapool';
+  if (standardizedName.toLowerCase() === 'foundry usa') return 'foundryusa';
+  if (standardizedName.toLowerCase() === 'spider pool') return 'spiderpool';
+  if (standardizedName.toLowerCase() === 'mining squared') return 'miningsquared';
+  if (standardizedName.toLowerCase() === 'nice hash') return 'nicehash';
+  
+  // General slug generation
+  return standardizedName.toLowerCase().replace(/[\s\.]+/g, '');
 }
 
 // Function to calculate percentages from blockCount values
@@ -82,7 +95,91 @@ function calculatePercentages(pools: any[]): Map<string, number> {
   return percentages;
 }
 
-// Main function to fetch data and update the database
+/**
+ * Helper function to handle standardized pool updating
+ */
+async function handleStandardizedPool(standardSlug: string, displayName: string, data: any) {
+  const existingPool = await db.select().from(miningPools).where(eq(miningPools.poolSlug, standardSlug));
+  
+  if (existingPool.length > 0) {
+    // Update existing pool
+    await db.update(miningPools)
+      .set({
+        displayName: displayName,
+        color: data.color,
+        hashrate24h: data.hashrate24h,
+        hashrate3d: data.hashrate3d,
+        hashrate1w: data.hashrate1w,
+        updatedAt: new Date()
+      })
+      .where(eq(miningPools.poolSlug, standardSlug));
+      
+    console.log(`Updated standardized mining pool: ${displayName}`);
+  } else {
+    // Insert new pool with standard slug
+    await db.insert(miningPools).values({
+      poolSlug: standardSlug,
+      displayName: displayName,
+      color: data.color,
+      hashrate24h: data.hashrate24h,
+      hashrate3d: data.hashrate3d,
+      hashrate1w: data.hashrate1w
+    });
+    
+    console.log(`Added standardized mining pool: ${displayName}`);
+  }
+}
+
+/**
+ * Function to clean up duplicate pools
+ */
+async function cleanupDuplicatePools() {
+  console.log("Checking for duplicate mining pools...");
+  
+  // Known pairs of duplicates to check
+  const duplicatePairs = [
+    ['braiins', 'braiinspool'],
+    ['mara', 'marapool'],
+    ['btccom', 'btc.com']
+  ];
+  
+  for (const [slug1, slug2] of duplicatePairs) {
+    const pool1 = await db.select().from(miningPools).where(eq(miningPools.poolSlug, slug1));
+    const pool2 = await db.select().from(miningPools).where(eq(miningPools.poolSlug, slug2));
+    
+    // If both exist, merge them into the standard one and delete the duplicate
+    if (pool1.length > 0 && pool2.length > 0) {
+      console.log(`Found duplicate pools: ${slug1} and ${slug2}`);
+      
+      // Determine which one to keep
+      let keepSlug, deleteSlug;
+      
+      if (slug1 === 'braiinspool' || slug2 === 'braiinspool') {
+        keepSlug = 'braiinspool';
+        deleteSlug = keepSlug === slug1 ? slug2 : slug1;
+      } else if (slug1 === 'marapool' || slug2 === 'marapool') {
+        keepSlug = 'marapool';
+        deleteSlug = keepSlug === slug1 ? slug2 : slug1;
+      } else if (slug1 === 'btccom' || slug2 === 'btccom') {
+        keepSlug = 'btccom';
+        deleteSlug = keepSlug === slug1 ? slug2 : slug1;
+      } else {
+        // Default to the first one
+        keepSlug = slug1;
+        deleteSlug = slug2;
+      }
+      
+      console.log(`Keeping ${keepSlug}, removing ${deleteSlug}`);
+      
+      // Delete the duplicate
+      await db.delete(miningPools).where(eq(miningPools.poolSlug, deleteSlug));
+    }
+  }
+}
+
+/**
+ * Main function to fetch data and update the database
+ */
 async function updateMiningPools() {
   console.log('Starting mining pools update...');
   
@@ -136,11 +233,34 @@ async function updateMiningPools() {
     // Update the database with the new data
     console.log(`Updating ${poolData.size} mining pools in the database...`);
     
+    // First, let's check for any duplicate or similar pools in the database
+    // and merge their data if needed
+    await cleanupDuplicatePools();
+    
     // Convert map entries to array for compatibility
     const poolEntries = Array.from(poolData.entries());
     
     for (const [poolName, data] of poolEntries) {
       const poolSlug = poolNameToSlug(poolName);
+      
+      // Handle known duplicate cases
+      if (poolSlug === 'braiins' || poolSlug === 'braiinspool') {
+        // Use braiinspool consistently
+        await handleStandardizedPool('braiinspool', 'Braiins Pool', data);
+        continue;
+      }
+      
+      if (poolSlug === 'mara' || poolSlug === 'marapool') {
+        // Use marapool consistently
+        await handleStandardizedPool('marapool', 'MARA Pool', data);
+        continue;
+      }
+      
+      if (poolSlug === 'btccom' || poolSlug === 'btc.com') {
+        // Use btccom consistently
+        await handleStandardizedPool('btccom', 'BTC.com', data);
+        continue;
+      }
       
       // Check if this pool already exists in the database
       const existingPool = await db.select().from(miningPools).where(eq(miningPools.poolSlug, poolSlug));

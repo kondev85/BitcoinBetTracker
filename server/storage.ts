@@ -36,6 +36,7 @@ export interface IStorage {
   // Network Hashrate operations
   getNetworkHashrate(period: string): Promise<NetworkHashrate | undefined>;
   createNetworkHashrate(hashrate: InsertNetworkHashrate): Promise<NetworkHashrate>;
+  getNetworkHashrateHistory(period: string, limit?: number): Promise<NetworkHashrate[]>;
   
   // Published Blocks operations
   getAllPublishedBlocks(): Promise<PublishedBlock[]>;
@@ -217,18 +218,39 @@ export class MemStorage implements IStorage {
 
   // Network Hashrate operations
   async getNetworkHashrate(period: string): Promise<NetworkHashrate | undefined> {
-    return Array.from(this.networkHashrates.values()).find(h => h.period === period);
+    // Find the most recent hashrate entry for the given period
+    const hashratesForPeriod = Array.from(this.networkHashrates.values())
+      .filter(h => h.period === period)
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    
+    return hashratesForPeriod.length > 0 ? hashratesForPeriod[0] : undefined;
   }
   
   async createNetworkHashrate(hashrate: InsertNetworkHashrate): Promise<NetworkHashrate> {
     const id = this.currentNetworkHashrateId++;
+    
+    // Create a properly typed NetworkHashrate object
     const newHashrate: NetworkHashrate = { 
-      ...hashrate, 
       id,
+      period: hashrate.period,
+      hashrate: hashrate.hashrate,
+      hashrate24h: hashrate.hashrate24h || null,
+      hashrate3d: hashrate.hashrate3d || null,
+      hashrate1w: hashrate.hashrate1w || null,
+      blockCount: hashrate.blockCount || null,
       updatedAt: new Date()
     };
+    
     this.networkHashrates.set(`${hashrate.period}-${id}`, newHashrate);
     return newHashrate;
+  }
+  
+  async getNetworkHashrateHistory(period: string, limit: number = 10): Promise<NetworkHashrate[]> {
+    // Get historical records for the given period, sorted by updatedAt in descending order
+    return Array.from(this.networkHashrates.values())
+      .filter(h => h.period === period)
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .slice(0, limit);
   }
 
   // Published Blocks operations

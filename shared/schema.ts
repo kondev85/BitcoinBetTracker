@@ -183,7 +183,11 @@ export const insertMiningPoolSchema = createInsertSchema(miningPools).pick({
 
 export const insertNetworkHashrateSchema = createInsertSchema(networkHashrate).pick({
   period: true,
-  hashrate: true
+  hashrate: true,
+  hashrate24h: true,
+  hashrate3d: true,
+  hashrate1w: true,
+  blockCount: true
 });
 
 // Types for use in application code

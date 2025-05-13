@@ -89,13 +89,28 @@ export class DatabaseStorage implements IStorage {
 
   // Network Hashrate operations
   async getNetworkHashrate(period: string): Promise<NetworkHashrate | undefined> {
-    const [hashrate] = await db.select().from(networkHashrate).where(eq(networkHashrate.period, period));
+    // Get the most recent record for the given period
+    const [hashrate] = await db.select()
+      .from(networkHashrate)
+      .where(eq(networkHashrate.period, period))
+      .orderBy(desc(networkHashrate.updatedAt))
+      .limit(1);
+    
     return hashrate;
   }
   
   async createNetworkHashrate(hashrate: InsertNetworkHashrate): Promise<NetworkHashrate> {
     const [newHashrate] = await db.insert(networkHashrate).values(hashrate).returning();
     return newHashrate;
+  }
+  
+  async getNetworkHashrateHistory(period: string, limit: number = 10): Promise<NetworkHashrate[]> {
+    // Get historical records for the given period
+    return db.select()
+      .from(networkHashrate)
+      .where(eq(networkHashrate.period, period))
+      .orderBy(desc(networkHashrate.updatedAt))
+      .limit(limit);
   }
 
   // Published Blocks operations

@@ -1,29 +1,11 @@
-import { updateMiningPools } from './update-mining-pools';
 import axios from 'axios';
-import { db } from '../server/db';
+import { db, pool } from '../server/db';
 import { networkHashrate } from '../shared/schema';
 
-async function main() {
-  console.log('Starting manual update of mining pools data...');
-  
-  try {
-    // First update mining pools data
-    await updateMiningPools();
-    console.log('Mining pools update completed successfully!');
-    
-    // Then update network hashrate data for each period
-    await updateNetworkHashrateData();
-    console.log('Network hashrate data update completed successfully!');
-  } catch (error) {
-    console.error('Error updating mining pools and network hashrate data:', error);
-    process.exit(1);
-  }
-  
-  process.exit(0);
-}
-
 /**
- * Function to fetch and store network hashrate data with historical tracking
+ * Script to update network hashrate data periodically
+ * This script will fetch network hashrate data from mempool.space and store it in the network_hashrate table
+ * Each run creates new rows to maintain historical data
  */
 async function updateNetworkHashrateData() {
   console.log('Starting network hashrate data update...');
@@ -49,8 +31,19 @@ async function updateNetworkHashrateData() {
         blockCount: response.data.pools ? response.data.pools.reduce((sum: number, pool: any) => sum + (pool.blockCount || 0), 0) : 0
       };
       
+      // Convert the hashrates to readable format (EH/s) for logging
+      const hashrate24hEH = networkStats.lastEstimatedHashrate / 1000000000000000000; // Convert to EH/s
+      const hashrate3dEH = (networkStats.lastEstimatedHashrate3d || networkStats.lastEstimatedHashrate) / 1000000000000000000; // Convert to EH/s
+      const hashrate1wEH = (networkStats.lastEstimatedHashrate1w || networkStats.lastEstimatedHashrate) / 1000000000000000000; // Convert to EH/s
+      
+      console.log(`Network hashrate data for ${period}:`);
+      console.log(`- 24h hashrate: ${hashrate24hEH.toFixed(2)} EH/s`);
+      console.log(`- 3d hashrate: ${hashrate3dEH.toFixed(2)} EH/s`);
+      console.log(`- 1w hashrate: ${hashrate1wEH.toFixed(2)} EH/s`);
+      console.log(`- Block count: ${networkStats.blockCount}`);
+      
       // Store the data in the network_hashrate table
-      // We do INSERT instead of UPDATE to keep historical data
+      // We do INSERT to create a new row for historical tracking
       await db.insert(networkHashrate).values({
         period: period,
         hashrate: networkStats.lastEstimatedHashrate, // For backward compatibility
@@ -60,14 +53,25 @@ async function updateNetworkHashrateData() {
         blockCount: networkStats.blockCount
       });
       
-      console.log(`Network hashrate data updated for ${period}`);
+      console.log(`Network hashrate data saved for ${period}`);
     }
     
     console.log('All network hashrate data updated successfully');
   } catch (error) {
     console.error('Error updating network hashrate data:', error);
     throw error;
+  } finally {
+    await pool.end();
   }
 }
 
-main();
+// Run the update function
+updateNetworkHashrateData()
+  .then(() => {
+    console.log('Network hashrate update completed');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('Network hashrate update failed:', error);
+    process.exit(1);
+  });

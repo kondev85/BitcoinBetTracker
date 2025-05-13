@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { sql } from 'drizzle-orm';
 import axios from 'axios';
 import { getRedisClient } from './redis';
+import { updateMiningPools } from '../scripts/update-mining-pools';
 import { storage } from './storage';
 import { registerRoutes } from './routes';
 import { insertBlockMinerOddsSchema, insertPaymentAddressSchema, insertTimeBetsSchema } from '@shared/schema';
@@ -176,6 +177,21 @@ async function fetchAndCacheMiningPools(period: string = '1w'): Promise<MiningPo
       } catch (redisError) {
         console.error('Redis cache storing error:', redisError);
         // Continue even if Redis storage fails
+      }
+    }
+    
+    // If we're fetching weekly data (1w), also update the mining_pools table
+    // This prevents multiple updates when fetching different periods
+    if (period === '1w') {
+      try {
+        console.log('Updating mining_pools table with latest data...');
+        // This runs asynchronously so it doesn't block the API response
+        updateMiningPools()
+          .then(() => console.log('Mining pools table updated successfully'))
+          .catch(err => console.error('Error updating mining pools table:', err));
+      } catch (updateError) {
+        console.error('Error updating mining pools table:', updateError);
+        // Continue even if update fails
       }
     }
     

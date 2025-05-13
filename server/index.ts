@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { apiRouter, adminRouter, setRedisConnected } from "./apis";
 import { checkDbConnection, resetConnectionPool } from "./db";
 import { initRedis } from "./redis";
+import networkHashrateRouter from "./network-hashrate-endpoints";
 import dotenv from 'dotenv';
 
 // Load environment variables from .env file

@@ -221,7 +221,11 @@ export class MemStorage implements IStorage {
     // Find the most recent hashrate entry for the given period
     const hashratesForPeriod = Array.from(this.networkHashrates.values())
       .filter(h => h.period === period)
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      .sort((a, b) => {
+        const dateA = a.updatedAt instanceof Date ? a.updatedAt : new Date(a.updatedAt || 0);
+        const dateB = b.updatedAt instanceof Date ? b.updatedAt : new Date(b.updatedAt || 0);
+        return dateB.getTime() - dateA.getTime();
+      });
     
     return hashratesForPeriod.length > 0 ? hashratesForPeriod[0] : undefined;
   }
@@ -249,7 +253,11 @@ export class MemStorage implements IStorage {
     // Get historical records for the given period, sorted by updatedAt in descending order
     return Array.from(this.networkHashrates.values())
       .filter(h => h.period === period)
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .sort((a, b) => {
+        const dateA = a.updatedAt instanceof Date ? a.updatedAt : new Date(a.updatedAt || 0);
+        const dateB = b.updatedAt instanceof Date ? b.updatedAt : new Date(b.updatedAt || 0);
+        return dateB.getTime() - dateA.getTime();
+      })
       .slice(0, limit);
   }
 

@@ -267,8 +267,22 @@ export default function BettingCard({ option, miningPoolColor = "#6B7280" }: Bet
                   </div>
                   <div className="space-y-2">
                     <Label>USDC Payment Address</Label>
-                    <div className="p-2 bg-background rounded-md overflow-x-auto font-mono text-sm break-all">
-                      {option.usdcPaymentAddress}
+                    <div className="p-2 bg-background rounded-md overflow-x-auto font-mono text-sm break-all flex items-center justify-between">
+                      <span className="overflow-x-auto mr-2">{option.usdcPaymentAddress}</span>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="flex-shrink-0" 
+                        onClick={() => {
+                          navigator.clipboard.writeText(option.usdcPaymentAddress || '');
+                          toast({
+                            title: "USDC Address copied",
+                            description: "Payment address has been copied to your clipboard",
+                          });
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </>
@@ -281,7 +295,7 @@ export default function BettingCard({ option, miningPoolColor = "#6B7280" }: Bet
           </Tabs>
           
           <p className="text-xs text-muted-foreground mt-2">
-            Send funds to the provided address to place your bet. The transaction will be confirmed on the blockchain.
+            Copy the payment address and send funds directly through your wallet. Your bet will be automatically processed once the transaction is confirmed on the blockchain.
           </p>
           
           <DialogFooter className="mt-4">

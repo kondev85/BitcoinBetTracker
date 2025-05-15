@@ -292,7 +292,7 @@ function PublishedBlocksTab() {
                 {publishedBlocks.map((block) => (
                   <TableRow key={block.height}>
                     <TableCell>{block.height}</TableCell>
-                    <TableCell>{new Date(block.estimatedDate).toLocaleString()}</TableCell>
+                    <TableCell>{new Date(block.estimatedDate || block.estimatedTime).toLocaleString()}</TableCell>
                     <TableCell>{block.description || "-"}</TableCell>
                     <TableCell>{block.isSpecial ? "Yes" : "No"}</TableCell>
                     <TableCell>

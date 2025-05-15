@@ -233,7 +233,7 @@ export default function Home() {
                 <div>
                   <h3 className="text-2xl font-bold">Block #{featuredBlock.height}</h3>
                   <p className="mt-1 text-muted-foreground">
-                    Estimated date: {new Date(featuredBlock.estimatedDate).toLocaleDateString()}
+                    Estimated date: {new Date(featuredBlock.estimatedDate || featuredBlock.estimatedTime).toLocaleDateString()}
                   </p>
                   <p className="mt-2 text-sm text-muted-foreground/70">
                     {featuredBlock.description || "Milestone blocks receive extra attention and often contain special messages."}

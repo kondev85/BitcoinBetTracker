@@ -38,10 +38,13 @@ export interface NetworkHashrate {
 export interface PublishedBlock {
   id: number;
   height: number;
-  estimatedDate: string;
+  estimatedDate?: string; // Frontend expected field
+  estimatedTime: string;  // Actual field from database
+  timeThreshold: number;
   description: string | null;
   isSpecial: boolean;
   isActive: boolean;
+  createdAt?: string;
 }
 
 export interface BettingOption {

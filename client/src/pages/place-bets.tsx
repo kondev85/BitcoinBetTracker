@@ -139,9 +139,21 @@ export default function PlaceBets() {
                       {publishedBlocks.find(b => b.height === selectedBlock) && (
                         <p className="mt-1 text-muted-foreground">
                           {(() => {
-                            // Get the selected block and ensure it has a valid date field
+                            console.log("Selected block data:", publishedBlocks.find(b => b.height === selectedBlock));
                             const selectedBlockData = publishedBlocks.find(b => b.height === selectedBlock)!;
-                            const dateToUse = selectedBlockData.estimatedDate || selectedBlockData.estimatedTime || new Date().toISOString();
+                            let dateToUse: string;
+                            
+                            if (selectedBlockData.estimatedDate) {
+                              dateToUse = selectedBlockData.estimatedDate;
+                              console.log("Using estimatedDate:", dateToUse);
+                            } else if (selectedBlockData.estimatedTime) {
+                              dateToUse = selectedBlockData.estimatedTime;
+                              console.log("Using estimatedTime:", dateToUse);
+                            } else {
+                              dateToUse = new Date().toISOString();
+                              console.log("Using current date:", dateToUse);
+                            }
+                            
                             return `Estimated date: ${new Date(dateToUse).toLocaleString('en-US', {
                               month: '2-digit',
                               day: '2-digit',

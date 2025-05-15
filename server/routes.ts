@@ -257,12 +257,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const estimatedDate = new Date(latestBlockTime);
           estimatedDate.setMinutes(estimatedDate.getMinutes() + minutesToAdd);
           dynamicEstimatedDate = estimatedDate;
+          
+          console.log(`Calculated dynamic estimated date for block ${block.height}:`);
+          console.log(`  Block difference: ${blockDiff}`);
+          console.log(`  Minutes to add: ${minutesToAdd}`);
+          console.log(`  Latest block time: ${latestBlockTime.toISOString()}`);
+          console.log(`  Resulting estimated date: ${dynamicEstimatedDate.toISOString()}`);
         }
         
-        console.log(`Block ${block.height} estimate: ${dynamicEstimatedDate.toISOString()}`);
-        
         // Create a new object to make sure we don't have reference issues
-        return {
+        const transformedBlock = {
           id: block.id,
           height: block.height,
           estimatedTime: block.estimatedTime,
@@ -271,9 +275,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isSpecial: block.isSpecial,
           description: block.description,
           createdAt: block.createdAt,
-          // Add estimatedDate for frontend
+          // Add estimatedDate for frontend (CRITICAL)
           estimatedDate: dynamicEstimatedDate.toISOString(),
         };
+        
+        // Log the transformed object to verify content
+        console.log(`Block ${block.height} transformed:`, JSON.stringify({
+          id: transformedBlock.id,
+          height: transformedBlock.height,
+          estimatedDate: transformedBlock.estimatedDate,
+          hasEstimatedDate: !!transformedBlock.estimatedDate
+        }));
+        
+        return transformedBlock;
       });
       
       console.log("First transformed block:", JSON.stringify(transformedBlocks[0]));

@@ -138,30 +138,29 @@ export default function PlaceBets() {
                       <h2 className="text-2xl font-bold">Block #{selectedBlock}</h2>
                       {publishedBlocks.find(b => b.height === selectedBlock) && (
                         <p className="mt-1 text-muted-foreground">
-                          {(() => {
-                            console.log("Selected block data:", publishedBlocks.find(b => b.height === selectedBlock));
+Estimated date: {(() => {
+                            // Log for debugging
                             const selectedBlockData = publishedBlocks.find(b => b.height === selectedBlock)!;
-                            let dateToUse: string;
+                            console.log("Selected block data for block", selectedBlock, ":", selectedBlockData);
                             
-                            if (selectedBlockData.estimatedDate) {
-                              dateToUse = selectedBlockData.estimatedDate;
-                              console.log("Using estimatedDate:", dateToUse);
-                            } else if (selectedBlockData.estimatedTime) {
-                              dateToUse = selectedBlockData.estimatedTime;
-                              console.log("Using estimatedTime:", dateToUse);
-                            } else {
-                              dateToUse = new Date().toISOString();
-                              console.log("Using current date:", dateToUse);
+                            // Force using estimatedTime field from database as primary source of truth
+                            const dateString = selectedBlockData.estimatedTime;
+                            console.log("Using date from estimatedTime:", dateString);
+                            
+                            try {
+                              // Format the date for display
+                              return new Date(dateString).toLocaleString('en-US', {
+                                month: '2-digit',
+                                day: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true
+                              });
+                            } catch (error) {
+                              console.error("Error formatting date:", error);
+                              return "Date calculation in progress...";
                             }
-                            
-                            return `Estimated date: ${new Date(dateToUse).toLocaleString('en-US', {
-                              month: '2-digit',
-                              day: '2-digit',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: true
-                            })}`;
                           })()}
                         </p>
                       )}

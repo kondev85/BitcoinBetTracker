@@ -13,21 +13,39 @@ export default function UpcomingBlockCard({ block }: UpcomingBlockCardProps) {
   const [formattedTime, setFormattedTime] = useState<string>("");
 
   useEffect(() => {
-    if (block && block.estimatedDate) {
-      const date = new Date(block.estimatedDate);
-      // Format the date as MM/DD/YYYY
-      setFormattedDate(date.toLocaleDateString('en-US', {
-        month: '2-digit',
-        day: '2-digit',
-        year: 'numeric'
-      }));
+    if (block) {
+      console.log("UpcomingBlockCard - Block data:", block);
       
-      // Format the time as HH:MM AM/PM
-      setFormattedTime(date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      }));
+      // Use estimatedTime as the source of truth, fallback to estimatedDate
+      const dateString = block.estimatedTime;
+      
+      if (dateString) {
+        console.log("UpcomingBlockCard - Using date:", dateString);
+        try {
+          const date = new Date(dateString);
+          // Format the date as MM/DD/YYYY
+          setFormattedDate(date.toLocaleDateString('en-US', {
+            month: '2-digit',
+            day: '2-digit',
+            year: 'numeric'
+          }));
+          
+          // Format the time as HH:MM AM/PM
+          setFormattedTime(date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          }));
+        } catch (error) {
+          console.error("UpcomingBlockCard - Error formatting date:", error);
+          setFormattedDate("Date pending");
+          setFormattedTime("");
+        }
+      } else {
+        console.warn("UpcomingBlockCard - No date available for block", block.height);
+        setFormattedDate("Date pending");
+        setFormattedTime("");
+      }
     }
   }, [block]);
 

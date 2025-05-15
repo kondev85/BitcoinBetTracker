@@ -229,12 +229,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Fetched blocks from database:", blocks.length);
       
       // Get the latest block to calculate dynamic estimated times
-      let latestBlock: { number: number } | undefined;
+      let latestBlock: { number: number, timestamp: Date } | undefined;
       try {
         const recentBlocks = await storage.getRecentBlocks(1);
         if (recentBlocks && recentBlocks.length > 0) {
           latestBlock = recentBlocks[0];
-          console.log("Latest block found:", latestBlock.number);
+          console.log("Latest block found:", latestBlock.number, "timestamp:", latestBlock.timestamp);
         } else {
           console.log("No recent blocks found");
         }
@@ -252,8 +252,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Each block takes approximately 10 minutes
           const minutesToAdd = blockDiff * 10;
           
-          // Create a new date based on current time plus the estimated minutes
-          const estimatedDate = new Date();
+          // Calculate estimated date based on the latest block's timestamp plus the estimated minutes
+          const latestBlockTime = new Date(latestBlock.timestamp);
+          const estimatedDate = new Date(latestBlockTime);
           estimatedDate.setMinutes(estimatedDate.getMinutes() + minutesToAdd);
           dynamicEstimatedDate = estimatedDate;
         }
@@ -294,23 +295,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Fetching block #${height} from database`);
       
-      // Get the latest block to calculate dynamic estimated time
+      // Calculate dynamic estimated time based on latest block and 10-minute average time
       let dynamicEstimatedDate: Date = new Date(block.estimatedTime);
       try {
+        // Get the latest block from the database
         const recentBlocks = await storage.getRecentBlocks(1);
         if (recentBlocks && recentBlocks.length > 0) {
           const latestBlock = recentBlocks[0];
-          console.log(`Latest block: ${latestBlock.number}`);
+          console.log(`Latest block: ${latestBlock.number}, timestamp: ${latestBlock.timestamp}`);
           
+          // Calculate blocks difference
           const blockDiff = block.height - latestBlock.number;
           // Each block takes approximately 10 minutes
           const minutesToAdd = blockDiff * 10;
           
-          // Create a new date based on current time plus the estimated minutes
-          const estimatedDate = new Date();
+          // Calculate estimated date based on the latest block's timestamp plus the estimated minutes
+          const latestBlockTime = new Date(latestBlock.timestamp);
+          const estimatedDate = new Date(latestBlockTime);
           estimatedDate.setMinutes(estimatedDate.getMinutes() + minutesToAdd);
           dynamicEstimatedDate = estimatedDate;
           
+          console.log(`Block difference: ${blockDiff}, minutes to add: ${minutesToAdd}`);
           console.log(`Calculated dynamic date: ${dynamicEstimatedDate.toISOString()}`);
         }
       } catch (error) {
@@ -327,7 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isSpecial: block.isSpecial,
         description: block.description,
         createdAt: block.createdAt,
-        // Add estimatedDate for frontend
+        // Add dynamically calculated estimatedDate for frontend
         estimatedDate: dynamicEstimatedDate.toISOString(),
       };
       

@@ -253,6 +253,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dynamicEstimatedDate = estimatedDate;
         }
         
+        console.log(`Block ${block.height} estimated date: ${dynamicEstimatedDate.toISOString()}`);
+        
         return {
           ...block,
           // Keep the original estimatedTime and add estimatedDate for frontend

@@ -139,17 +139,13 @@ export default function PlaceBets() {
                       {publishedBlocks.find(b => b.height === selectedBlock) && (
                         <p className="mt-1 text-muted-foreground">
 Estimated date: {(() => {
-                            // Log for debugging
+                            // Get the selected block
                             const selectedBlockData = publishedBlocks.find(b => b.height === selectedBlock)!;
-                            console.log("Selected block data for block", selectedBlock, ":", selectedBlockData);
                             
-                            // Force using estimatedTime field from database as primary source of truth
-                            const dateString = selectedBlockData.estimatedTime;
-                            console.log("Using date from estimatedTime:", dateString);
-                            
+                            // Format the date - just simple display with no conditions
+                            let dateDisplay = '';
                             try {
-                              // Format the date for display
-                              return new Date(dateString).toLocaleString('en-US', {
+                              dateDisplay = new Date(selectedBlockData.estimatedTime).toLocaleString('en-US', {
                                 month: '2-digit',
                                 day: '2-digit',
                                 year: 'numeric',
@@ -157,10 +153,10 @@ Estimated date: {(() => {
                                 minute: '2-digit',
                                 hour12: true
                               });
-                            } catch (error) {
-                              console.error("Error formatting date:", error);
-                              return "Date calculation in progress...";
+                            } catch (e) {
+                              dateDisplay = "Calculating...";
                             }
+                            return dateDisplay;
                           })()}
                         </p>
                       )}

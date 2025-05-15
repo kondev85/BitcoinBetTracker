@@ -53,13 +53,13 @@ export function BlockCountdown({ targetBlockHeight, latestBlock }: BlockCountdow
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
       {/* Predicted Date */}
-      <Card className="bg-gray-900 border-0 text-center overflow-hidden">
+      <Card className="bg-[#111111] border-neutral-800 text-center overflow-hidden">
         <CardContent className="p-4">
-          <h3 className="text-xs uppercase tracking-wider text-muted-foreground border-b border-gray-800 pb-2 mb-3">
+          <h3 className="text-xs uppercase tracking-wider text-neutral-400 border-b border-neutral-800 pb-2 mb-3">
             Predicted Date
           </h3>
           <div className="flex flex-col items-center">
-            <div className="text-xl sm:text-2xl font-bold text-primary">
+            <div className="text-xl sm:text-2xl font-bold text-orange-400">
               {estimatedDate 
                 ? estimatedDate.toLocaleDateString('en-US', { 
                     month: 'short', 
@@ -68,7 +68,7 @@ export function BlockCountdown({ targetBlockHeight, latestBlock }: BlockCountdow
                   }) 
                 : "Loading..."}
             </div>
-            <div className="text-xs text-muted-foreground mt-2">
+            <div className="text-xs text-neutral-400 mt-2">
               {estimatedDate 
                 ? estimatedDate.toLocaleTimeString('en-US', { 
                     hour: 'numeric', 
@@ -83,43 +83,43 @@ export function BlockCountdown({ targetBlockHeight, latestBlock }: BlockCountdow
       </Card>
 
       {/* Est. Time Remaining */}
-      <Card className="bg-gray-900 border-0 text-center overflow-hidden">
+      <Card className="bg-[#111111] border-neutral-800 text-center overflow-hidden">
         <CardContent className="p-4">
-          <h3 className="text-xs uppercase tracking-wider text-muted-foreground border-b border-gray-800 pb-2 mb-3">
+          <h3 className="text-xs uppercase tracking-wider text-neutral-400 border-b border-neutral-800 pb-2 mb-3">
             Est. Time Remaining
           </h3>
           <div className="grid grid-cols-4 gap-1 text-center">
             <div className="flex flex-col">
-              <span className="text-xl sm:text-2xl font-bold text-primary">{countdown.days}</span>
-              <span className="text-xs text-muted-foreground">DAYS</span>
+              <span className="text-xl sm:text-2xl font-bold text-orange-400">{countdown.days}</span>
+              <span className="text-xs text-neutral-400">DAYS</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-xl sm:text-2xl font-bold text-primary">{countdown.hours}</span>
-              <span className="text-xs text-muted-foreground">HOURS</span>
+              <span className="text-xl sm:text-2xl font-bold text-orange-400">{countdown.hours}</span>
+              <span className="text-xs text-neutral-400">HOURS</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-xl sm:text-2xl font-bold text-primary">{countdown.minutes}</span>
-              <span className="text-xs text-muted-foreground">MINS</span>
+              <span className="text-xl sm:text-2xl font-bold text-orange-400">{countdown.minutes}</span>
+              <span className="text-xs text-neutral-400">MINS</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-xl sm:text-2xl font-bold text-primary">{countdown.seconds}</span>
-              <span className="text-xs text-muted-foreground">SECS</span>
+              <span className="text-xl sm:text-2xl font-bold text-orange-400">{countdown.seconds}</span>
+              <span className="text-xs text-neutral-400">SECS</span>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Blocks Remaining */}
-      <Card className="bg-gray-900 border-0 text-center overflow-hidden">
+      <Card className="bg-[#111111] border-neutral-800 text-center overflow-hidden">
         <CardContent className="p-4">
-          <h3 className="text-xs uppercase tracking-wider text-muted-foreground border-b border-gray-800 pb-2 mb-3">
+          <h3 className="text-xs uppercase tracking-wider text-neutral-400 border-b border-neutral-800 pb-2 mb-3">
             Blocks Remaining
           </h3>
           <div className="flex flex-col items-center">
-            <div className="text-xl sm:text-2xl font-bold text-primary">
+            <div className="text-xl sm:text-2xl font-bold text-orange-400">
               {blocksRemaining.toLocaleString()}
             </div>
-            <div className="text-xs text-muted-foreground mt-2">
+            <div className="text-xs text-neutral-400 mt-2">
               Target #{targetBlockHeight.toLocaleString()}
             </div>
           </div>

@@ -9,11 +9,14 @@ import {
   insertBlockMinerOddsSchema,
   insertTimeBetsSchema,
   insertPaymentAddressSchema,
+  blocks,
 } from "@shared/schema";
 import { z } from "zod";
 import { getRedisClient } from "./redis";
 import axios from "axios";
 import { createAutoBettingOptions } from "./utils";
+import { desc } from "drizzle-orm";
+import { db } from "./db";
 
 // Check database connection and verify existing tables
 async function initializeData() {
@@ -221,73 +224,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/published-blocks", async (req, res) => {
     try {
+      console.log("\n=========== PUBLISHED BLOCKS API CALL ===========");
+      console.log("Request query:", req.query);
+      
       const onlyActive = req.query.active === "true";
+      console.log("Only active blocks:", onlyActive);
+      
       const blocks = onlyActive 
         ? await storage.getActivePublishedBlocks()
         : await storage.getAllPublishedBlocks();
       
       console.log("Fetched blocks from database:", blocks.length);
+      console.log("First block example:", JSON.stringify(blocks[0]));
       
       // Get the latest block to calculate dynamic estimated times
       let latestBlock: { number: number, timestamp: Date } | undefined;
       try {
+        console.log("Fetching recent blocks for base calculation...");
         const recentBlocks = await storage.getRecentBlocks(1);
+        
+        console.log("Recent blocks query result:", JSON.stringify(recentBlocks));
+        
         if (recentBlocks && recentBlocks.length > 0) {
           latestBlock = recentBlocks[0];
           console.log("Latest block found:", latestBlock.number, "timestamp:", latestBlock.timestamp);
         } else {
-          console.log("No recent blocks found");
+          console.log("WARNING: No recent blocks found");
         }
       } catch (error) {
         console.error("Error fetching latest block:", error);
       }
       
-      // Debugging info - extra verbose to help diagnose issues
-      console.log("Calculating dynamic dates for", blocks.length, "blocks");
-      if (latestBlock) {
-        console.log("Using latest block for calculations:", latestBlock.number);
-      } else {
-        console.log("WARNING: No latest block available for calculations!");
+      // Check if any recent blocks exist at all
+      try {
+        console.log("Manual check - Getting blocks via storage interface");
+        const allBlocks = await storage.getAllBlocks();
+        console.log(`Manual check found ${allBlocks.length} blocks`);
+        if (allBlocks.length > 0) {
+          console.log("First block found:", JSON.stringify(allBlocks[0]));
+        }
+      } catch (dbError) {
+        console.error("Error in manual block check:", dbError);
       }
+      
+      console.log("\nStarting transformation of blocks to add estimatedDate...");
+      console.log("Using latest block for calculations:", latestBlock ? latestBlock.number : "NONE");
       
       // Transform the blocks to include estimatedDate for frontend compatibility
       const transformedBlocks = blocks.map(block => {
+        console.log(`\nProcessing block ${block.height}:`);
+        
         // Calculate dynamic estimated date based on latest block
         let dynamicEstimatedDate: Date;
         
         if (latestBlock && latestBlock.number) {
           const blockDiff = block.height - latestBlock.number;
-          // Each block takes approximately 10 minutes to mine
-          const minutesToAdd = blockDiff * 10;
+          const minutesToAdd = blockDiff * 10; // 10 minutes per block
           
-          // Use the latest actual block time as our base for calculation
+          console.log(`- Block difference: ${blockDiff} blocks (${minutesToAdd} minutes)`);
+          
+          // Use the latest actual block time as our base
           const latestBlockTime = new Date(latestBlock.timestamp);
           dynamicEstimatedDate = new Date(latestBlockTime);
           dynamicEstimatedDate.setMinutes(dynamicEstimatedDate.getMinutes() + minutesToAdd);
           
-          console.log(`Block ${block.height}:`, {
-            latestBlockHeight: latestBlock.number, 
-            blockDiff,
-            minutesToAdd,
-            latestBlockTime: latestBlockTime.toISOString(),
-            dynamicEstimatedDate: dynamicEstimatedDate.toISOString(),
-            savedTime: block.estimatedTime
-          });
+          console.log(`- Base time from block ${latestBlock.number}: ${latestBlockTime.toISOString()}`);
+          console.log(`- Calculated time for block ${block.height}: ${dynamicEstimatedDate.toISOString()}`);
+          console.log(`- Original saved time: ${block.estimatedTime}`);
         } else {
-          // Fallback: use the stored time if we can't calculate dynamically
+          // Fallback to the stored time
           dynamicEstimatedDate = new Date(block.estimatedTime);
-          console.log(`Block ${block.height} - using fallback time:`, dynamicEstimatedDate.toISOString());
+          console.log(`- FALLBACK: Using saved time: ${dynamicEstimatedDate.toISOString()}`);
         }
         
-        // Create the transformed object
-        return {
-          ...block, // Keep all original fields
-          estimatedDate: dynamicEstimatedDate.toISOString() // Add calculated date
+        // Create a new object with both the original fields and our new field
+        const transformedBlock = {
+          ...block,
+          estimatedDate: dynamicEstimatedDate.toISOString()
         };
+        
+        console.log(`- Final transformed block:`, JSON.stringify(transformedBlock));
+        return transformedBlock;
       });
       
-      // Extra debug 
-      console.log("First transformed block:", JSON.stringify(transformedBlocks[0]));
+      console.log("\nTransformation complete. Sample of first block:");
+      console.log(JSON.stringify(transformedBlocks[0], null, 2));
+      console.log("=========== END PUBLISHED BLOCKS API CALL ===========\n");
       
       res.json(transformedBlocks);
     } catch (error) {

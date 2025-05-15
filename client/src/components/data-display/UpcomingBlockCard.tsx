@@ -16,8 +16,8 @@ export default function UpcomingBlockCard({ block }: UpcomingBlockCardProps) {
     if (block) {
       console.log("UpcomingBlockCard - Block data:", block);
       
-      // Use estimatedTime as the source of truth, fallback to estimatedDate
-      const dateString = block.estimatedTime;
+      // Use estimatedDate (dynamic calculation) as source of truth, fallback to estimatedTime
+      const dateString = block.estimatedDate || block.estimatedTime;
       
       if (dateString) {
         console.log("UpcomingBlockCard - Using date:", dateString);

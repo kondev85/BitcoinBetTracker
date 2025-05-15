@@ -244,28 +244,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Transform the blocks to include estimatedDate for frontend compatibility
       const transformedBlocks = blocks.map(block => {
-        // Calculate dynamic estimated date if we have the latest block
-        let dynamicEstimatedDate: Date = new Date(block.estimatedTime);
+        // Calculate dynamic estimated date based on latest block
+        let dynamicEstimatedDate: Date;
+        let needsCalculation = true;
         
         if (latestBlock && latestBlock.number) {
           const blockDiff = block.height - latestBlock.number;
-          // Each block takes approximately 10 minutes
+          // Each block takes approximately 10 minutes to mine
           const minutesToAdd = blockDiff * 10;
           
-          // Calculate estimated date based on the latest block's timestamp plus the estimated minutes
+          // Use the latest actual block time as our base for calculation
           const latestBlockTime = new Date(latestBlock.timestamp);
-          const estimatedDate = new Date(latestBlockTime);
-          estimatedDate.setMinutes(estimatedDate.getMinutes() + minutesToAdd);
-          dynamicEstimatedDate = estimatedDate;
+          dynamicEstimatedDate = new Date(latestBlockTime);
+          dynamicEstimatedDate.setMinutes(dynamicEstimatedDate.getMinutes() + minutesToAdd);
           
-          console.log(`Calculated dynamic estimated date for block ${block.height}:`);
-          console.log(`  Block difference: ${blockDiff}`);
-          console.log(`  Minutes to add: ${minutesToAdd}`);
-          console.log(`  Latest block time: ${latestBlockTime.toISOString()}`);
-          console.log(`  Resulting estimated date: ${dynamicEstimatedDate.toISOString()}`);
+          console.log(`Block ${block.height} DYNAMIC calculation:`);
+          console.log(`  Latest block: ${latestBlock.number}`);
+          console.log(`  Block difference: ${blockDiff} blocks`);
+          console.log(`  Time to add: ${minutesToAdd} minutes`);
+          console.log(`  Base time: ${latestBlockTime.toISOString()}`);
+          console.log(`  NEW estimated time: ${dynamicEstimatedDate.toISOString()}`);
+          console.log(`  OLD saved time: ${block.estimatedTime}`);
+          needsCalculation = false;
+        } else {
+          // Fallback: use the stored time if we can't calculate dynamically
+          dynamicEstimatedDate = new Date(block.estimatedTime);
+          console.log(`Block ${block.height} - Using saved time (no calculation):`);
+          console.log(`  Saved time: ${dynamicEstimatedDate.toISOString()}`);
         }
         
-        // Create a new object to make sure we don't have reference issues
+        // Create a new object with both fields
         const transformedBlock = {
           id: block.id,
           height: block.height,
@@ -275,17 +283,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isSpecial: block.isSpecial,
           description: block.description,
           createdAt: block.createdAt,
-          // Add estimatedDate for frontend (CRITICAL)
+          // Add the DYNAMICALLY calculated estimatedDate for frontend
           estimatedDate: dynamicEstimatedDate.toISOString(),
+          needsCalculation: needsCalculation
         };
-        
-        // Log the transformed object to verify content
-        console.log(`Block ${block.height} transformed:`, JSON.stringify({
-          id: transformedBlock.id,
-          height: transformedBlock.height,
-          estimatedDate: transformedBlock.estimatedDate,
-          hasEstimatedDate: !!transformedBlock.estimatedDate
-        }));
         
         return transformedBlock;
       });
@@ -310,13 +311,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Fetching block #${height} from database`);
       
       // Calculate dynamic estimated time based on latest block and 10-minute average time
-      let dynamicEstimatedDate: Date = new Date(block.estimatedTime);
+      let dynamicEstimatedDate: Date;
+      let needsCalculation = true;
+      
       try {
         // Get the latest block from the database
         const recentBlocks = await storage.getRecentBlocks(1);
         if (recentBlocks && recentBlocks.length > 0) {
           const latestBlock = recentBlocks[0];
-          console.log(`Latest block: ${latestBlock.number}, timestamp: ${latestBlock.timestamp}`);
           
           // Calculate blocks difference
           const blockDiff = block.height - latestBlock.number;
@@ -325,15 +327,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Calculate estimated date based on the latest block's timestamp plus the estimated minutes
           const latestBlockTime = new Date(latestBlock.timestamp);
-          const estimatedDate = new Date(latestBlockTime);
-          estimatedDate.setMinutes(estimatedDate.getMinutes() + minutesToAdd);
-          dynamicEstimatedDate = estimatedDate;
+          dynamicEstimatedDate = new Date(latestBlockTime);
+          dynamicEstimatedDate.setMinutes(dynamicEstimatedDate.getMinutes() + minutesToAdd);
           
-          console.log(`Block difference: ${blockDiff}, minutes to add: ${minutesToAdd}`);
-          console.log(`Calculated dynamic date: ${dynamicEstimatedDate.toISOString()}`);
+          console.log(`Block ${block.height} DYNAMIC calculation (single block):`);
+          console.log(`  Latest block: ${latestBlock.number}`);
+          console.log(`  Block difference: ${blockDiff} blocks`);
+          console.log(`  Time to add: ${minutesToAdd} minutes`);
+          console.log(`  Base time: ${latestBlockTime.toISOString()}`);
+          console.log(`  NEW estimated time: ${dynamicEstimatedDate.toISOString()}`);
+          console.log(`  OLD saved time: ${block.estimatedTime}`);
+          needsCalculation = false;
+        } else {
+          // Fallback to saved time
+          dynamicEstimatedDate = new Date(block.estimatedTime);
+          console.log(`No latest block available, using saved time for block ${block.height}:`, block.estimatedTime);
         }
       } catch (error) {
         console.error("Error calculating dynamic estimated date:", error);
+        // Fallback to saved time on error
+        dynamicEstimatedDate = new Date(block.estimatedTime);
       }
       
       // Add estimatedDate for frontend compatibility
@@ -348,6 +361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdAt: block.createdAt,
         // Add dynamically calculated estimatedDate for frontend
         estimatedDate: dynamicEstimatedDate.toISOString(),
+        needsCalculation: needsCalculation
       };
       
       console.log(`Returning block with estimatedDate: ${transformedBlock.estimatedDate}`);

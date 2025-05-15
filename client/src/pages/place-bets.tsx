@@ -138,14 +138,21 @@ export default function PlaceBets() {
                       <h2 className="text-2xl font-bold">Block #{selectedBlock}</h2>
                       {publishedBlocks.find(b => b.height === selectedBlock) && (
                         <p className="mt-1 text-muted-foreground">
-Estimated date: {(() => {
-                            // Get the selected block
-                            const selectedBlockData = publishedBlocks.find(b => b.height === selectedBlock)!;
+                          Estimated date: {(() => {
+                            // Get the block data
+                            const block = publishedBlocks.find(b => b.height === selectedBlock)!;
                             
-                            // Format the date - just simple display with no conditions
-                            let dateDisplay = '';
+                            // Log for debugging
+                            console.log("Selected block data:", block);
+                            
+                            // Get the date string to use (prefer estimatedDate from server's dynamic calculation)
+                            const dateStr = block.estimatedDate || block.estimatedTime;
+                            if (!dateStr) {
+                              return "Calculating...";
+                            }
+                            
                             try {
-                              dateDisplay = new Date(selectedBlockData.estimatedTime).toLocaleString('en-US', {
+                              return new Date(dateStr).toLocaleString('en-US', {
                                 month: '2-digit',
                                 day: '2-digit',
                                 year: 'numeric',
@@ -153,10 +160,10 @@ Estimated date: {(() => {
                                 minute: '2-digit',
                                 hour12: true
                               });
-                            } catch (e) {
-                              dateDisplay = "Calculating...";
+                            } catch (error) {
+                              console.error("Error formatting date:", error);
+                              return "Calculating...";
                             }
-                            return dateDisplay;
                           })()}
                         </p>
                       )}

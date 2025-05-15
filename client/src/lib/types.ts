@@ -6,15 +6,15 @@ export interface User {
 
 export interface Block {
   id: number;
-  height: number;
-  miningPool: string;
-  timestamp: string;
-  foundInMinutes: number | null;
-  blockReward: number | null;
-  fees: number | null;
-  totalInput: number | null;
-  size: number | null;
-  txCount: number | null;
+  number: number;    // This is the actual block height/number in the DB schema
+  poolSlug: string;  // The mining pool slug (ID)
+  timestamp: string | Date; // Can be either string or Date type
+  foundInMinutes?: number | null;
+  blockReward?: number | null;
+  fees?: number | null;
+  totalInput?: number | null;
+  size?: number | null;
+  txCount?: number | null;
 }
 
 export interface MiningPool {

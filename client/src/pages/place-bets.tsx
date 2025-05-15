@@ -17,6 +17,11 @@ export default function PlaceBets() {
     queryFn: () => fetchPublishedBlocks(true),
   });
   
+  // Fetch the latest blocks for dynamic date calculation
+  const { data: latestBlocks, isLoading: isLoadingLatestBlocks } = useQuery({
+    queryKey: ['/api/blocks'],
+  });
+  
   const { data: miningPools } = useQuery({
     queryKey: ['/api/mining-pools'],
     queryFn: fetchMiningPools,
@@ -140,19 +145,56 @@ export default function PlaceBets() {
                         <p className="mt-1 text-muted-foreground">
                           Estimated date: {(() => {
                             // Get the block data
-                            const block = publishedBlocks.find(b => b.height === selectedBlock)!;
+                            const selectedBlockData = publishedBlocks.find(b => b.height === selectedBlock)!;
                             
                             // Log for debugging
-                            console.log("Selected block data:", block);
+                            console.log("Selected block data:", selectedBlockData);
                             
-                            // Get the date string to use (prefer estimatedDate from server's dynamic calculation)
-                            const dateStr = block.estimatedDate || block.estimatedTime;
-                            if (!dateStr) {
-                              return "Calculating...";
+                            // Try to dynamically calculate date based on latest block
+                            if (latestBlocks && latestBlocks.length > 0) {
+                              const currentBlock = latestBlocks[0];
+                              
+                              // Calculate blocks difference
+                              const blockDiff = selectedBlockData.height - currentBlock.number;
+                              const minutesToAdd = blockDiff * 10; // 10 minutes per block
+                              
+                              // Get the base time from latest block
+                              const baseTime = new Date(currentBlock.timestamp);
+                              
+                              // Add the time for additional blocks
+                              const estimatedDate = new Date(baseTime);
+                              estimatedDate.setMinutes(estimatedDate.getMinutes() + minutesToAdd);
+                              
+                              console.log("Dynamically calculated date:", {
+                                latestBlock: currentBlock.number,
+                                targetBlock: selectedBlockData.height,
+                                blockDiff,
+                                minutesToAdd,
+                                baseTime: baseTime.toISOString(),
+                                estimatedDate: estimatedDate.toISOString(),
+                              });
+                              
+                              // Format the date
+                              try {
+                                return estimatedDate.toLocaleString('en-US', {
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  hour12: true
+                                });
+                              } catch (error) {
+                                console.error("Error formatting dynamic date:", error);
+                              }
                             }
                             
+                            // Fallback to saved date if dynamic calculation isn't possible
                             try {
-                              return new Date(dateStr).toLocaleString('en-US', {
+                              const fallbackDate = new Date(selectedBlockData.estimatedTime);
+                              console.log("Using fallback date:", fallbackDate.toISOString());
+                              
+                              return fallbackDate.toLocaleString('en-US', {
                                 month: '2-digit',
                                 day: '2-digit',
                                 year: 'numeric',
@@ -161,7 +203,7 @@ export default function PlaceBets() {
                                 hour12: true
                               });
                             } catch (error) {
-                              console.error("Error formatting date:", error);
+                              console.error("Error formatting fallback date:", error);
                               return "Calculating...";
                             }
                           })()}

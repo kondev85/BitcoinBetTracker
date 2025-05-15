@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BettingOption, PaymentAddress } from "@/lib/types";
+import { BettingOption, PaymentAddress, Block } from "@/lib/types";
 
 export default function PlaceBets() {
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null);
@@ -18,7 +18,7 @@ export default function PlaceBets() {
   });
   
   // Fetch the latest blocks for dynamic date calculation
-  const { data: latestBlocks, isLoading: isLoadingLatestBlocks } = useQuery({
+  const { data: latestBlocks = [] as Block[], isLoading: isLoadingLatestBlocks } = useQuery<Block[]>({
     queryKey: ['/api/blocks'],
   });
   
@@ -151,7 +151,7 @@ export default function PlaceBets() {
                             console.log("Selected block data:", selectedBlockData);
                             
                             // Try to dynamically calculate date based on latest block
-                            if (latestBlocks && latestBlocks.length > 0) {
+                            if (latestBlocks.length > 0) {
                               const currentBlock = latestBlocks[0];
                               
                               // Calculate blocks difference

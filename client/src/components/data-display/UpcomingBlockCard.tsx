@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PublishedBlock } from "@/lib/types";
+import { PublishedBlock, Block } from "@/lib/types";
 import { useQuery } from "@tanstack/react-query";
 
 interface UpcomingBlockCardProps {
@@ -40,12 +40,12 @@ export default function UpcomingBlockCard({ block }: UpcomingBlockCardProps) {
   const [formattedTime, setFormattedTime] = useState<string>("");
   
   // Get the latest block to use as reference for dynamic calculations
-  const { data: latestBlocks = [] } = useQuery({
+  const { data: latestBlocks = [] } = useQuery<Block[]>({
     queryKey: ['/api/blocks']
   });
   
   // Get the actual latest block (first one in the array)
-  const latestBlock = latestBlocks && latestBlocks.length > 0 ? latestBlocks[0] : null;
+  const latestBlock = latestBlocks.length > 0 ? latestBlocks[0] : null;
 
   useEffect(() => {
     if (block) {

@@ -226,8 +226,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? await storage.getActivePublishedBlocks()
         : await storage.getAllPublishedBlocks();
       
-      res.json(blocks);
+      // Get the latest block to calculate dynamic estimated times
+      let latestBlock;
+      try {
+        const recentBlocks = await storage.getRecentBlocks(1);
+        latestBlock = recentBlocks[0];
+      } catch (error) {
+        console.error("Error fetching latest block:", error);
+      }
+      
+      // Transform the blocks to include estimatedDate for frontend compatibility
+      const transformedBlocks = blocks.map(block => {
+        // Calculate dynamic estimated date if we have the latest block
+        let dynamicEstimatedDate = block.estimatedTime;
+        
+        if (latestBlock && latestBlock.number) {
+          const blockDiff = block.height - latestBlock.number;
+          // Each block takes approximately 10 minutes
+          const minutesToAdd = blockDiff * 10;
+          
+          // Create a new date based on current time plus the estimated minutes
+          const estimatedDate = new Date();
+          estimatedDate.setMinutes(estimatedDate.getMinutes() + minutesToAdd);
+          dynamicEstimatedDate = estimatedDate;
+        }
+        
+        return {
+          ...block,
+          // Keep the original estimatedTime and add estimatedDate for frontend
+          estimatedDate: dynamicEstimatedDate.toISOString(),
+        };
+      });
+      
+      res.json(transformedBlocks);
     } catch (error) {
+      console.error("Error in /api/published-blocks:", error);
       res.status(500).json({ error: "Failed to fetch published blocks" });
     }
   });
@@ -241,8 +274,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Published block not found" });
       }
       
-      res.json(block);
+      // Get the latest block to calculate dynamic estimated time
+      let dynamicEstimatedDate = block.estimatedTime;
+      try {
+        const recentBlocks = await storage.getRecentBlocks(1);
+        if (recentBlocks && recentBlocks.length > 0) {
+          const latestBlock = recentBlocks[0];
+          const blockDiff = block.height - latestBlock.number;
+          // Each block takes approximately 10 minutes
+          const minutesToAdd = blockDiff * 10;
+          
+          // Create a new date based on current time plus the estimated minutes
+          const estimatedDate = new Date();
+          estimatedDate.setMinutes(estimatedDate.getMinutes() + minutesToAdd);
+          dynamicEstimatedDate = estimatedDate;
+        }
+      } catch (error) {
+        console.error("Error calculating dynamic estimated date:", error);
+      }
+      
+      // Add estimatedDate for frontend compatibility
+      const transformedBlock = {
+        ...block,
+        estimatedDate: dynamicEstimatedDate.toISOString(),
+      };
+      
+      res.json(transformedBlock);
     } catch (error) {
+      console.error("Error in /api/published-blocks/:height:", error);
       res.status(500).json({ error: "Failed to fetch published block" });
     }
   });

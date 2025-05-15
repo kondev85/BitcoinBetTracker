@@ -145,7 +145,14 @@ export default function BlockDetails() {
                         </h3>
                         <p className="mt-1 text-2xl font-semibold">
                           {isFutureBlock 
-                            ? new Date(publishedBlock!.estimatedDate || publishedBlock!.estimatedTime).toLocaleString()
+                            ? new Date(publishedBlock!.estimatedDate || publishedBlock!.estimatedTime).toLocaleString('en-US', {
+                                month: '2-digit',
+                                day: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true
+                              })
                             : new Date(block!.timestamp).toLocaleString()
                           }
                         </p>

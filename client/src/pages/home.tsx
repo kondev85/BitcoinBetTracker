@@ -8,6 +8,7 @@ import MiningPoolPieChartWithHashrate from "@/components/data-display/MiningPool
 import BlocksTable from "@/components/data-display/BlocksTable";
 import MiningStats from "@/components/data-display/MiningStats";
 import BettingCard from "@/components/data-display/BettingCard";
+import UpcomingBlockCard from "@/components/data-display/UpcomingBlockCard";
 import { fetchPublishedBlocks, fetchReserveAddresses, fetchPaymentAddressesByBlock, fetchMiningPools } from "@/lib/api";
 import { TimePeriod, BettingOption, PaymentAddress } from "@/lib/types";
 import { useState } from "react";
@@ -216,37 +217,17 @@ export default function Home() {
       {/* Section E: Place Your Bets */}
       <section className="py-12 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="lg:text-center mb-10">
-            <h2 className="text-base text-primary font-semibold tracking-wide uppercase">Ready to Bet?</h2>
-            <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight sm:text-4xl">
-              Place Your Bets on Block #{featuredBlock?.height || "900,000"}
-            </p>
-            <p className="mt-4 max-w-2xl text-xl text-muted-foreground lg:mx-auto">
-              Block #{featuredBlock?.height || "900,000"} is coming up soon. Who do you think will mine this milestone block?
-            </p>
-          </div>
-
-          {/* Upcoming Special Block Card */}
+          {/* Use our new UpcomingBlockCard component */}
           {featuredBlock && (
-            <div className="bg-card rounded-lg shadow-lg p-6 mb-10">
-              <div className="flex flex-col md:flex-row md:items-center justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold">Block #{featuredBlock.height}</h3>
-                  <p className="mt-1 text-muted-foreground">
-                    Estimated date: {new Date(featuredBlock.estimatedDate || featuredBlock.estimatedTime).toLocaleDateString()}
-                  </p>
-                  <p className="mt-2 text-sm text-muted-foreground/70">
-                    {featuredBlock.description || "Milestone blocks receive extra attention and often contain special messages."}
-                  </p>
-                </div>
-                <div className="mt-4 md:mt-0">
-                  <div className="inline-flex rounded-md shadow">
-                    <Link href={`/block-details/${featuredBlock.height}`}>
-                      <Button>View Block Details</Button>
-                    </Link>
-                  </div>
-                </div>
-              </div>
+            <UpcomingBlockCard block={featuredBlock} />
+          )}
+          {!featuredBlock && (
+            <div className="lg:text-center mb-10">
+              <div className="text-primary font-bold uppercase tracking-wide mb-2">READY TO BET?</div>
+              <h1 className="text-4xl font-bold mb-2">Place Your Bets on Block #900000</h1>
+              <p className="text-lg text-muted-foreground mb-6">
+                Block #900000 is coming up soon. Who do you think will mine this milestone block?
+              </p>
             </div>
           )}
 

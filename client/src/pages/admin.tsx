@@ -151,7 +151,8 @@ function PublishedBlocksTab() {
       
       await createPublishedBlock({
         height: newBlock.height,
-        estimatedDate: new Date(newBlock.estimatedDate).toISOString(),
+        estimatedTime: new Date(newBlock.estimatedDate).toISOString(), // Use estimatedTime for DB
+        timeThreshold: 10, // Default time threshold
         description: newBlock.description || null,
         isSpecial: newBlock.isSpecial || false,
         isActive: newBlock.isActive !== undefined ? newBlock.isActive : true

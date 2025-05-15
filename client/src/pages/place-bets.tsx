@@ -136,9 +136,21 @@ export default function PlaceBets() {
                   <div className="flex flex-col md:flex-row md:items-center justify-between">
                     <div>
                       <h2 className="text-2xl font-bold">Block #{selectedBlock}</h2>
-                      {publishedBlocks.find(b => b.height === selectedBlock)?.estimatedDate && (
+                      {publishedBlocks.find(b => b.height === selectedBlock) && (
                         <p className="mt-1 text-muted-foreground">
-                          Estimated date: {new Date(publishedBlocks.find(b => b.height === selectedBlock)!.estimatedDate).toLocaleDateString()}
+                          {(() => {
+                            // Get the selected block and ensure it has a valid date field
+                            const selectedBlockData = publishedBlocks.find(b => b.height === selectedBlock)!;
+                            const dateToUse = selectedBlockData.estimatedDate || selectedBlockData.estimatedTime || new Date().toISOString();
+                            return `Estimated date: ${new Date(dateToUse).toLocaleString('en-US', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true
+                            })}`;
+                          })()}
                         </p>
                       )}
                       {publishedBlocks.find(b => b.height === selectedBlock)?.description && (

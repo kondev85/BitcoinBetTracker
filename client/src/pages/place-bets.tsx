@@ -147,65 +147,24 @@ export default function PlaceBets() {
                             // Get the block data
                             const selectedBlockData = publishedBlocks.find(b => b.height === selectedBlock)!;
                             
-                            // Log for debugging
-                            console.log("Selected block data:", selectedBlockData);
-                            
                             // Try to dynamically calculate date based on latest block
                             if (latestBlocks.length > 0) {
                               const currentBlock = latestBlocks[0];
                               
-                              // Calculate blocks difference
-                              const blockDiff = selectedBlockData.height - currentBlock.number;
-                              const minutesToAdd = blockDiff * 10; // 10 minutes per block
+                              // Calculate estimated time using our utility function
+                              const estimatedDate = calculateEstimatedBlockTime(
+                                selectedBlockData.height, 
+                                currentBlock
+                              );
                               
-                              // Get the base time from latest block
-                              const baseTime = new Date(currentBlock.timestamp);
-                              
-                              // Add the time for additional blocks
-                              const estimatedDate = new Date(baseTime);
-                              estimatedDate.setMinutes(estimatedDate.getMinutes() + minutesToAdd);
-                              
-                              console.log("Dynamically calculated date:", {
-                                latestBlock: currentBlock.number,
-                                targetBlock: selectedBlockData.height,
-                                blockDiff,
-                                minutesToAdd,
-                                baseTime: baseTime.toISOString(),
-                                estimatedDate: estimatedDate.toISOString(),
-                              });
-                              
-                              // Format the date
-                              try {
-                                return estimatedDate.toLocaleString('en-US', {
-                                  month: '2-digit',
-                                  day: '2-digit',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  hour12: true
-                                });
-                              } catch (error) {
-                                console.error("Error formatting dynamic date:", error);
+                              // Format and return the date
+                              if (estimatedDate) {
+                                return formatBlockDate(estimatedDate);
                               }
                             }
                             
                             // Fallback to saved date if dynamic calculation isn't possible
-                            try {
-                              const fallbackDate = new Date(selectedBlockData.estimatedTime);
-                              console.log("Using fallback date:", fallbackDate.toISOString());
-                              
-                              return fallbackDate.toLocaleString('en-US', {
-                                month: '2-digit',
-                                day: '2-digit',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: true
-                              });
-                            } catch (error) {
-                              console.error("Error formatting fallback date:", error);
-                              return "Calculating...";
-                            }
+                            return formatBlockDate(selectedBlockData.estimatedTime);
                           })()}
                         </p>
                       )}

@@ -224,94 +224,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/published-blocks", async (req, res) => {
     try {
-      console.log("\n=========== PUBLISHED BLOCKS API CALL ===========");
-      console.log("Request query:", req.query);
-      
       const onlyActive = req.query.active === "true";
-      console.log("Only active blocks:", onlyActive);
       
+      // Fetch blocks from database based on active filter
       const blocks = onlyActive 
         ? await storage.getActivePublishedBlocks()
         : await storage.getAllPublishedBlocks();
       
-      console.log("Fetched blocks from database:", blocks.length);
-      console.log("First block example:", JSON.stringify(blocks[0]));
-      
-      // Get the latest block to calculate dynamic estimated times
-      let latestBlock: { number: number, timestamp: Date } | undefined;
-      try {
-        console.log("Fetching recent blocks for base calculation...");
-        const recentBlocks = await storage.getRecentBlocks(1);
-        
-        console.log("Recent blocks query result:", JSON.stringify(recentBlocks));
-        
-        if (recentBlocks && recentBlocks.length > 0) {
-          latestBlock = recentBlocks[0];
-          console.log("Latest block found:", latestBlock.number, "timestamp:", latestBlock.timestamp);
-        } else {
-          console.log("WARNING: No recent blocks found");
-        }
-      } catch (error) {
-        console.error("Error fetching latest block:", error);
-      }
-      
-      // Check if any recent blocks exist at all
-      try {
-        console.log("Manual check - Getting blocks via storage interface");
-        const allBlocks = await storage.getAllBlocks();
-        console.log(`Manual check found ${allBlocks.length} blocks`);
-        if (allBlocks.length > 0) {
-          console.log("First block found:", JSON.stringify(allBlocks[0]));
-        }
-      } catch (dbError) {
-        console.error("Error in manual block check:", dbError);
-      }
-      
-      console.log("\nStarting transformation of blocks to add estimatedDate...");
-      console.log("Using latest block for calculations:", latestBlock ? latestBlock.number : "NONE");
-      
-      // Transform the blocks to include estimatedDate for frontend compatibility
-      const transformedBlocks = blocks.map(block => {
-        console.log(`\nProcessing block ${block.height}:`);
-        
-        // Calculate dynamic estimated date based on latest block
-        let dynamicEstimatedDate: Date;
-        
-        if (latestBlock && latestBlock.number) {
-          const blockDiff = block.height - latestBlock.number;
-          const minutesToAdd = blockDiff * 10; // 10 minutes per block
-          
-          console.log(`- Block difference: ${blockDiff} blocks (${minutesToAdd} minutes)`);
-          
-          // Use the latest actual block time as our base
-          const latestBlockTime = new Date(latestBlock.timestamp);
-          dynamicEstimatedDate = new Date(latestBlockTime);
-          dynamicEstimatedDate.setMinutes(dynamicEstimatedDate.getMinutes() + minutesToAdd);
-          
-          console.log(`- Base time from block ${latestBlock.number}: ${latestBlockTime.toISOString()}`);
-          console.log(`- Calculated time for block ${block.height}: ${dynamicEstimatedDate.toISOString()}`);
-          console.log(`- Original saved time: ${block.estimatedTime}`);
-        } else {
-          // Fallback to the stored time
-          dynamicEstimatedDate = new Date(block.estimatedTime);
-          console.log(`- FALLBACK: Using saved time: ${dynamicEstimatedDate.toISOString()}`);
-        }
-        
-        // Create a new object with both the original fields and our new field
-        const transformedBlock = {
-          ...block,
-          estimatedDate: dynamicEstimatedDate.toISOString()
-        };
-        
-        console.log(`- Final transformed block:`, JSON.stringify(transformedBlock));
-        return transformedBlock;
-      });
-      
-      console.log("\nTransformation complete. Sample of first block:");
-      console.log(JSON.stringify(transformedBlocks[0], null, 2));
-      console.log("=========== END PUBLISHED BLOCKS API CALL ===========\n");
-      
-      res.json(transformedBlocks);
+      // Simply return the blocks without any transformation
+      // The frontend will handle dynamic date calculations
+      res.json(blocks);
     } catch (error) {
       console.error("Error in /api/published-blocks:", error);
       res.status(500).json({ error: "Failed to fetch published blocks" });

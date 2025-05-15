@@ -1,38 +1,13 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublishedBlock, Block } from "@/lib/types";
 import { useQuery } from "@tanstack/react-query";
+import { calculateEstimatedBlockTime, formatBlockDate } from "@/utils/block-calculations";
 
 interface UpcomingBlockCardProps {
   block: PublishedBlock;
-}
-
-// Function to dynamically calculate estimated block time
-function calculateDynamicBlockTime(blockHeight: number, latestBlock: any): Date | null {
-  if (!latestBlock) return null;
-  
-  // Get the block difference
-  const blockDiff = blockHeight - latestBlock.number;
-  
-  // Each block takes about 10 minutes on average
-  const minutesToAdd = blockDiff * 10;
-  
-  // Use the latest block's timestamp as base
-  const baseTime = new Date(latestBlock.timestamp);
-  const estimatedTime = new Date(baseTime);
-  estimatedTime.setMinutes(estimatedTime.getMinutes() + minutesToAdd);
-  
-  console.log(`Dynamic calculation for block ${blockHeight}:`, {
-    latestBlockNum: latestBlock.number,
-    blockDiff,
-    minutesToAdd,
-    baseTime: baseTime.toISOString(),
-    estimatedTime: estimatedTime.toISOString()
-  });
-  
-  return estimatedTime;
 }
 
 export default function UpcomingBlockCard({ block }: UpcomingBlockCardProps) {
@@ -49,20 +24,16 @@ export default function UpcomingBlockCard({ block }: UpcomingBlockCardProps) {
 
   useEffect(() => {
     if (block) {
-      console.log("UpcomingBlockCard - Block data:", block);
-      
       // Attempt to calculate a dynamic date if we have the latest block
       let dateToUse: Date | null = null;
       
       if (latestBlock) {
         // Calculate dynamic date based on latest block
-        dateToUse = calculateDynamicBlockTime(block.height, latestBlock);
-        console.log("Dynamic date calculated:", dateToUse);
+        dateToUse = calculateEstimatedBlockTime(block.height, latestBlock);
       }
       
       // Fallback to stored date if dynamic calculation failed
       if (!dateToUse) {
-        console.log("Using saved date from database");
         const dateString = block.estimatedTime;
         if (dateString) {
           dateToUse = new Date(dateString);
@@ -73,11 +44,7 @@ export default function UpcomingBlockCard({ block }: UpcomingBlockCardProps) {
       if (dateToUse) {
         try {
           // Format the date as MM/DD/YYYY
-          setFormattedDate(dateToUse.toLocaleDateString('en-US', {
-            month: '2-digit',
-            day: '2-digit',
-            year: 'numeric'
-          }));
+          setFormattedDate(formatBlockDate(dateToUse, false));
           
           // Format the time as HH:MM AM/PM
           setFormattedTime(dateToUse.toLocaleTimeString('en-US', {
@@ -86,12 +53,11 @@ export default function UpcomingBlockCard({ block }: UpcomingBlockCardProps) {
             hour12: true
           }));
         } catch (error) {
-          console.error("UpcomingBlockCard - Error formatting date:", error);
+          console.error("Error formatting date:", error);
           setFormattedDate("Date pending");
           setFormattedTime("");
         }
       } else {
-        console.warn("UpcomingBlockCard - No date available for block", block.height);
         setFormattedDate("Date pending");
         setFormattedTime("");
       }

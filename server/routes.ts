@@ -227,10 +227,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : await storage.getAllPublishedBlocks();
       
       // Get the latest block to calculate dynamic estimated times
-      let latestBlock;
+      let latestBlock: { number: number } | undefined;
       try {
         const recentBlocks = await storage.getRecentBlocks(1);
-        latestBlock = recentBlocks[0];
+        if (recentBlocks && recentBlocks.length > 0) {
+          latestBlock = recentBlocks[0];
+        }
       } catch (error) {
         console.error("Error fetching latest block:", error);
       }
@@ -238,7 +240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Transform the blocks to include estimatedDate for frontend compatibility
       const transformedBlocks = blocks.map(block => {
         // Calculate dynamic estimated date if we have the latest block
-        let dynamicEstimatedDate = block.estimatedTime;
+        let dynamicEstimatedDate: Date = new Date(block.estimatedTime);
         
         if (latestBlock && latestBlock.number) {
           const blockDiff = block.height - latestBlock.number;
@@ -275,7 +277,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get the latest block to calculate dynamic estimated time
-      let dynamicEstimatedDate = block.estimatedTime;
+      let dynamicEstimatedDate: Date = new Date(block.estimatedTime);
       try {
         const recentBlocks = await storage.getRecentBlocks(1);
         if (recentBlocks && recentBlocks.length > 0) {

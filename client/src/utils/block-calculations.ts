@@ -70,3 +70,59 @@ export function formatBlockDate(date: Date | null | string, includeTime: boolean
     return "Date pending";
   }
 }
+
+/**
+ * Interface for countdown time components
+ */
+export interface CountdownTime {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  totalSeconds: number;
+}
+
+/**
+ * Calculate the time remaining until a specific date
+ * 
+ * @param targetDate - The target date to calculate countdown to
+ * @returns An object containing days, hours, minutes, and seconds remaining
+ */
+export function calculateTimeRemaining(targetDate: Date | null): CountdownTime {
+  if (!targetDate) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 };
+  }
+
+  const now = new Date();
+  const difference = targetDate.getTime() - now.getTime();
+  
+  // If the target date is in the past, return zeros
+  if (difference <= 0) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 };
+  }
+  
+  const totalSeconds = Math.floor(difference / 1000);
+  
+  // Calculate days, hours, minutes, seconds
+  const days = Math.floor(totalSeconds / (60 * 60 * 24));
+  const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / (60 * 60));
+  const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  
+  return { days, hours, minutes, seconds, totalSeconds };
+}
+
+/**
+ * Calculate blocks remaining between target block and current block
+ * 
+ * @param targetBlockHeight - The target block height
+ * @param currentBlockHeight - The current block height
+ * @returns The number of blocks remaining, or 0 if in the past
+ */
+export function calculateBlocksRemaining(
+  targetBlockHeight: number, 
+  currentBlockHeight: number
+): number {
+  const blocksRemaining = targetBlockHeight - currentBlockHeight;
+  return blocksRemaining > 0 ? blocksRemaining : 0;
+}

@@ -226,12 +226,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? await storage.getActivePublishedBlocks()
         : await storage.getAllPublishedBlocks();
       
+      console.log("Fetched blocks from database:", blocks.length);
+      
       // Get the latest block to calculate dynamic estimated times
       let latestBlock: { number: number } | undefined;
       try {
         const recentBlocks = await storage.getRecentBlocks(1);
         if (recentBlocks && recentBlocks.length > 0) {
           latestBlock = recentBlocks[0];
+          console.log("Latest block found:", latestBlock.number);
+        } else {
+          console.log("No recent blocks found");
         }
       } catch (error) {
         console.error("Error fetching latest block:", error);
@@ -253,15 +258,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dynamicEstimatedDate = estimatedDate;
         }
         
-        console.log(`Block ${block.height} estimated date: ${dynamicEstimatedDate.toISOString()}`);
+        console.log(`Block ${block.height} estimate: ${dynamicEstimatedDate.toISOString()}`);
         
+        // Create a new object to make sure we don't have reference issues
         return {
-          ...block,
-          // Keep the original estimatedTime and add estimatedDate for frontend
+          id: block.id,
+          height: block.height,
+          estimatedTime: block.estimatedTime,
+          timeThreshold: block.timeThreshold,
+          isActive: block.isActive,
+          isSpecial: block.isSpecial,
+          description: block.description,
+          createdAt: block.createdAt,
+          // Add estimatedDate for frontend
           estimatedDate: dynamicEstimatedDate.toISOString(),
         };
       });
       
+      console.log("First transformed block:", JSON.stringify(transformedBlocks[0]));
       res.json(transformedBlocks);
     } catch (error) {
       console.error("Error in /api/published-blocks:", error);
@@ -278,12 +292,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Published block not found" });
       }
       
+      console.log(`Fetching block #${height} from database`);
+      
       // Get the latest block to calculate dynamic estimated time
       let dynamicEstimatedDate: Date = new Date(block.estimatedTime);
       try {
         const recentBlocks = await storage.getRecentBlocks(1);
         if (recentBlocks && recentBlocks.length > 0) {
           const latestBlock = recentBlocks[0];
+          console.log(`Latest block: ${latestBlock.number}`);
+          
           const blockDiff = block.height - latestBlock.number;
           // Each block takes approximately 10 minutes
           const minutesToAdd = blockDiff * 10;
@@ -292,6 +310,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const estimatedDate = new Date();
           estimatedDate.setMinutes(estimatedDate.getMinutes() + minutesToAdd);
           dynamicEstimatedDate = estimatedDate;
+          
+          console.log(`Calculated dynamic date: ${dynamicEstimatedDate.toISOString()}`);
         }
       } catch (error) {
         console.error("Error calculating dynamic estimated date:", error);
@@ -299,10 +319,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Add estimatedDate for frontend compatibility
       const transformedBlock = {
-        ...block,
+        id: block.id,
+        height: block.height,
+        estimatedTime: block.estimatedTime,
+        timeThreshold: block.timeThreshold,
+        isActive: block.isActive,
+        isSpecial: block.isSpecial,
+        description: block.description,
+        createdAt: block.createdAt,
+        // Add estimatedDate for frontend
         estimatedDate: dynamicEstimatedDate.toISOString(),
       };
       
+      console.log(`Returning block with estimatedDate: ${transformedBlock.estimatedDate}`);
       res.json(transformedBlock);
     } catch (error) {
       console.error("Error in /api/published-blocks/:height:", error);

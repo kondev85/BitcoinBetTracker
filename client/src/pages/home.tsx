@@ -9,8 +9,9 @@ import BlocksTable from "@/components/data-display/BlocksTable";
 import MiningStats from "@/components/data-display/MiningStats";
 import BettingCard from "@/components/data-display/BettingCard";
 import UpcomingBlockCard from "@/components/data-display/UpcomingBlockCard";
+import BlockCountdown from "@/components/data-display/BlockCountdown";
 import { fetchPublishedBlocks, fetchReserveAddresses, fetchPaymentAddressesByBlock, fetchMiningPools } from "@/lib/api";
-import { TimePeriod, BettingOption, PaymentAddress } from "@/lib/types";
+import { TimePeriod, BettingOption, PaymentAddress, Block } from "@/lib/types";
 import { useState } from "react";
 
 export default function Home() {
@@ -40,6 +41,11 @@ export default function Home() {
     queryKey: [`/api/payment-addresses/${featuredBlock?.height}`],
     queryFn: () => featuredBlock ? fetchPaymentAddressesByBlock(featuredBlock.height) : Promise.resolve([]),
     enabled: !!featuredBlock,
+  });
+  
+  // Fetch recent blocks for countdown calculations
+  const { data: latestBlocks = [] } = useQuery<Block[]>({
+    queryKey: ['/api/blocks'],
   });
   
   const { data: reserveAddresses } = useQuery({
@@ -217,22 +223,30 @@ export default function Home() {
       {/* Section E: Place Your Bets */}
       <section className="py-12 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Use our new UpcomingBlockCard component */}
-          {featuredBlock && (
-            <UpcomingBlockCard block={featuredBlock} />
-          )}
-          {!featuredBlock && (
-            <div className="lg:text-center mb-10">
-              <div className="text-primary font-bold uppercase tracking-wide mb-2">READY TO BET?</div>
+          {/* Featured Block Header */}
+          <div className="lg:text-center mb-6">
+            <div className="text-primary font-bold uppercase tracking-wide mb-2">READY TO BET?</div>
+            {featuredBlock && (
+              <h1 className="text-4xl font-bold mb-2">Place Your Bets on Block #{featuredBlock.height}</h1>
+            )}
+            {!featuredBlock && (
               <h1 className="text-4xl font-bold mb-2">Place Your Bets on Block #900000</h1>
-              <p className="text-lg text-muted-foreground mb-6">
-                Block #900000 is coming up soon. Who do you think will mine this milestone block?
-              </p>
-            </div>
+            )}
+            <p className="text-lg text-muted-foreground mb-6">
+              Who do you think will mine this milestone block?
+            </p>
+          </div>
+          
+          {/* Bitcoin Block Countdown */}
+          {featuredBlock && latestBlocks.length > 0 && (
+            <BlockCountdown 
+              targetBlockHeight={featuredBlock.height} 
+              latestBlock={latestBlocks[0]} 
+            />
           )}
 
           {/* Betting Options */}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mt-8">
             {featuredBlockOptions.slice(0, 3).map((option) => (
               <BettingCard 
                 key={option.id} 

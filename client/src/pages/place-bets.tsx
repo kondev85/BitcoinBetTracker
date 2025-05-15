@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BettingOption, PaymentAddress, Block } from "@/lib/types";
+import { calculateEstimatedBlockTime, formatBlockDate } from "@/utils/block-calculations";
 
 export default function PlaceBets() {
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null);

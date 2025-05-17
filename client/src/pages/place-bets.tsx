@@ -87,8 +87,8 @@ export default function PlaceBets() {
   const timeOptions = bettingOptions?.filter(option => (option.type === 'under_time' || option.type === 'over_time') && option.blockHeight === selectedBlock) || [];
   
   // Get pool colors for miner betting options
-  const getPoolColor = (poolName: string) => {
-    const pool = miningPools?.find(p => p.name === poolName);
+  const getPoolColor = (poolSlug: string) => {
+    const pool = miningPools?.find(p => p.poolSlug === poolSlug);
     return pool?.color || "#6B7280";
   };
   

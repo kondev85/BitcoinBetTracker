@@ -28,8 +28,8 @@ export default function Home() {
   });
   
   // Get pool colors for miner betting options
-  const getPoolColor = (poolName: string) => {
-    const pool = miningPools?.find(p => p.name === poolName);
+  const getPoolColor = (poolSlug: string) => {
+    const pool = miningPools?.find(p => p.poolSlug === poolSlug);
     return pool?.color || "#6B7280";
   };
 
@@ -53,6 +53,8 @@ export default function Home() {
     queryFn: fetchReserveAddresses,
   });
 
+  // Function moved to top level
+  
   // Map payment addresses to betting options
   const featuredBlockOptions = paymentAddresses?.map((address: PaymentAddress) => {
     const option: BettingOption = {

@@ -15,6 +15,8 @@ interface BettingCardProps {
 }
 
 export default function BettingCard({ option, miningPoolColor = "#6B7280" }: BettingCardProps) {
+  // Use displayName if available for more user-friendly display
+  const displayText = option.displayName || option.value;
   const [showBetDialog, setShowBetDialog] = useState(false);
   const [betAmount, setBetAmount] = useState("");
   const [activeCurrency, setActiveCurrency] = useState<"btc" | "ltc" | "usdc">("btc");
@@ -68,7 +70,7 @@ export default function BettingCard({ option, miningPoolColor = "#6B7280" }: Bet
                 style={{ backgroundColor: miningPoolColor }}
               >
                 <span className="text-white text-lg font-bold">
-                  {option.value ? option.value.charAt(0).toUpperCase() : "?"}
+                  {displayText ? displayText.charAt(0).toUpperCase() : "?"}
                 </span>
               </div>
             ) : (

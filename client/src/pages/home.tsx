@@ -68,12 +68,15 @@ export default function Home() {
     };
     
     if (address.betType === 'miner') {
+      const poolInfo = miningPools?.find(p => p.poolSlug === address.poolSlug);
       if (address.outcome === 'hit') {
         option.type = 'miner';
         option.value = address.poolSlug || '';
+        option.displayName = poolInfo?.displayName || address.poolSlug || '';
       } else {
         option.type = 'not_miner';
         option.value = address.poolSlug || '';
+        option.displayName = poolInfo?.displayName || address.poolSlug || '';
       }
     } else if (address.betType === 'time') {
       if (address.outcome === 'under') {

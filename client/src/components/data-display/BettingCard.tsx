@@ -326,38 +326,44 @@ export default function BettingCard({ option, miningPoolColor = "#6B7280" }: Bet
 }
 
 function getBetTitle(option: BettingOption): string {
+  // Use displayName if available, otherwise fallback to value
+  const displayText = option.displayName || option.value;
+  
   switch (option.type) {
     case 'miner':
       if (option.value.toLowerCase() === 'other') {
         return `Other Will Mine`;
       }
-      return `${option.value} Will Mine`;
+      return `${displayText} Will Mine`;
     case 'not_miner':
       if (option.value.toLowerCase() === 'other') {
         return `Other Won't Mine`;
       }
-      return `${option.value} Won't Mine`;
+      return `${displayText} Won't Mine`;
     case 'under_time':
       return `Block Time Under ${option.value}min`;
     case 'over_time':
       return `Block Time Over ${option.value}min`;
     default:
-      return option.value;
+      return displayText;
   }
 }
 
 function getBetDescription(option: BettingOption): string {
+  // Use displayName if available, otherwise fallback to value
+  const displayText = option.displayName || option.value;
+  
   switch (option.type) {
     case 'miner':
       if (option.value.toLowerCase() === 'other') {
         return `Bet that a mining pool different than Foundry USA, AntPool and ViaBTC will mine block #${option.blockHeight}.`;
       }
-      return `Bet that ${option.value} will mine block #${option.blockHeight}.`;
+      return `Bet that ${displayText} will mine block #${option.blockHeight}.`;
     case 'not_miner':
       if (option.value.toLowerCase() === 'other') {
         return `Bet that a mining pool different than Foundry USA, AntPool and ViaBTC will NOT mine block #${option.blockHeight}.`;
       }
-      return `Bet that ${option.value} will NOT mine block #${option.blockHeight}.`;
+      return `Bet that ${displayText} will NOT mine block #${option.blockHeight}.`;
     case 'under_time':
       return `Bet that block #${option.blockHeight} will be mined in less than ${option.value} minutes after the previous block.`;
     case 'over_time':

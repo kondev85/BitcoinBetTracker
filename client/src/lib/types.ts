@@ -51,7 +51,8 @@ export interface BettingOption {
   id: number;
   blockHeight: number;
   type: string; // miner, not_miner, under_time, over_time
-  value: string; // miner name or time threshold
+  value: string; // pool slug or time threshold
+  displayName?: string; // human-readable mining pool name
   odds: number;
   paymentAddress: string;
   ltcPaymentAddress: string | null;
